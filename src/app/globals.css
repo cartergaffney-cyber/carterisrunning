@@ -3,6 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* dataviz palette (see references/palette.md in the dataviz skill) */
+  --chart-blue: #2a78d6;
+  --chart-green: #008300;
+  --chart-text-secondary: #52514e;
+  --chart-muted: #898781;
+  --chart-gridline: #e1e0d9;
+  --chart-baseline: #c3c2b7;
 }
 
 @theme inline {
@@ -16,6 +24,13 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+
+    --chart-blue: #3987e5;
+    --chart-green: #008300;
+    --chart-text-secondary: #c3c2b7;
+    --chart-muted: #898781;
+    --chart-gridline: #2c2c2a;
+    --chart-baseline: #383835;
   }
 }
 

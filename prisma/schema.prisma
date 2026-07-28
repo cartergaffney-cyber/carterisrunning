@@ -1,0 +1,325 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum RaceDistance {
+  FIVE_K
+  TEN_K
+  HALF_MARATHON
+  MARATHON
+  FIFTY_K
+  FIFTY_MILE
+  HUNDRED_K
+  HUNDRED_MILE
+}
+
+enum PlanStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum TrainingPhase {
+  BASE
+  BUILD
+  PEAK
+  TAPER
+}
+
+enum WorkoutType {
+  REST
+  EASY
+  LONG_RUN
+  TEMPO
+  INTERVAL
+  RACE_PACE
+  BACK_TO_BACK_LONG
+  CROSS_TRAIN
+  RACE
+}
+
+enum RaceSource {
+  RUNSIGNUP
+  WEB_SEARCH
+  MANUAL
+}
+
+enum TerrainType {
+  ROAD
+  TRAIL
+  MIXED
+  UNKNOWN
+}
+
+enum MileageTrend {
+  INCREASING
+  STABLE
+  DECREASING
+}
+
+enum PaceBasis {
+  GOAL_TIME
+  CURRENT_FITNESS
+  BLENDED
+}
+
+enum ClubDiscoverySource {
+  WEB_SEARCH
+  RUNNING_STORE
+  RRCA_DIRECTORY
+  MANUAL
+}
+
+enum ClubStatus {
+  CANDIDATE
+  TRACKED
+  DISMISSED
+}
+
+enum ClubSessionType {
+  EASY
+  TEMPO
+  INTERVAL
+  LONG_RUN
+  SOCIAL
+  TRACK
+  UNKNOWN
+}
+
+enum ClubSuggestionStatus {
+  SUGGESTED
+  ACCEPTED
+  DISMISSED
+}
+
+enum RouteStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  stravaAthleteId      BigInt    @unique
+  firstName            String?
+  lastName             String?
+  profileImageUrl      String?
+  unitPreference       String    @default("MILES")
+  stravaAccessToken    String
+  stravaRefreshToken   String
+  stravaTokenExpiresAt DateTime
+  lastSyncedAt         DateTime?
+  homeAddress          String?
+  homeLat              Float?
+  homeLng              Float?
+  homeCity             String?
+  homeState            String?
+  homeGeocodedAt       DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  trainingPlans    TrainingPlan[]
+  runs             Run[]
+  fitnessSnapshots FitnessSnapshot[]
+  clubs            Club[]
+}
+
+model TrainingPlan {
+  id                        String       @id @default(cuid())
+  userId                    String
+  user                      User         @relation(fields: [userId], references: [id])
+  raceId                    String?
+  race                      Race?            @relation(fields: [raceId], references: [id])
+  raceDistance              RaceDistance
+  raceDate                  DateTime
+  startDate                 DateTime
+  currentWeeklyMileageMiles Float
+  goalTimeSeconds           Int?
+  fitnessSnapshotId         String?
+  fitnessSnapshot           FitnessSnapshot? @relation(fields: [fitnessSnapshotId], references: [id])
+  paceBasis                 PaceBasis?
+  easyPaceSecondsPerMile    Int?
+  tempoPaceSecondsPerMile   Int?
+  intervalPaceSecondsPerMile Int?
+  longRunPaceSecondsPerMile Int?
+  racePaceSecondsPerMile    Int?
+  totalWeeks                Int
+  status                    PlanStatus       @default(ACTIVE)
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+
+  plannedWorkouts PlannedWorkout[]
+
+  @@index([userId, status])
+}
+
+model FitnessSnapshot {
+  id                                String       @id @default(cuid())
+  userId                            String
+  user                              User         @relation(fields: [userId], references: [id])
+  windowWeeks                       Int          @default(12)
+  computedAt                        DateTime     @default(now())
+  avgWeeklyMileageMiles             Float
+  mileageTrend                      MileageTrend
+  typicalEasyPaceSecondsPerMile     Int?
+  bestRecentEffortDistanceMiles     Float?
+  bestRecentEffortSeconds           Int?
+  bestRecentEffortDate              DateTime?
+  riegelEstimatedPaceSecondsPerMile Int?
+  roadMileageMiles                  Float?
+  trailMileageMiles                 Float?
+  avgElevationGainFeetPerMile       Float?
+
+  trainingPlans TrainingPlan[]
+
+  @@index([userId, computedAt])
+}
+
+model Race {
+  id                  String      @id @default(cuid())
+  name                String
+  source              RaceSource
+  externalId          String?
+  raceDate            DateTime?
+  city                String?
+  state               String?
+  country             String?
+  zipcode             String?
+  distanceMeters      Float?
+  terrainType         TerrainType @default(UNKNOWN)
+  elevationGainMeters Float?
+  courseUrl           String?
+  sourceUrl           String?
+  raw                 String?
+  confirmedByUser     Boolean     @default(false)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  trainingPlans TrainingPlan[]
+}
+
+model PlannedWorkout {
+  id                       String        @id @default(cuid())
+  trainingPlanId           String
+  trainingPlan             TrainingPlan  @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+  weekNumber               Int
+  date                     DateTime
+  phase                    TrainingPhase
+  isStepBack               Boolean       @default(false)
+  workoutType              WorkoutType
+  targetDistanceMiles      Float?
+  targetDurationMinutes    Int?
+  targetPaceSecondsPerMile Int?
+  description              String
+  completed                Boolean       @default(false)
+
+  run            Run?
+  clubSuggestion ClubSuggestion?
+  generatedRoute GeneratedRoute?
+
+  @@index([trainingPlanId, weekNumber])
+  @@index([trainingPlanId, date])
+}
+
+model GeneratedRoute {
+  id                  String         @id @default(cuid())
+  plannedWorkoutId    String         @unique
+  plannedWorkout      PlannedWorkout @relation(fields: [plannedWorkoutId], references: [id], onDelete: Cascade)
+  targetDistanceMiles Float
+  actualDistanceMiles Float?
+  elevationGainFeet   Float?
+  startLat            Float
+  startLng            Float
+  gpxContent          String?
+  fileName            String?
+  mapboxRaw           String?
+  status              RouteStatus    @default(GENERATING)
+  errorMessage        String?
+  generatedAt         DateTime       @default(now())
+}
+
+model Club {
+  id                     String              @id @default(cuid())
+  userId                 String
+  user                   User                @relation(fields: [userId], references: [id])
+  name                   String
+  websiteUrl             String
+  city                   String?
+  state                  String?
+  lat                    Float?
+  lng                    Float?
+  distanceFromHomeMiles  Float?
+  sourceQuery            String?
+  discoverySource        ClubDiscoverySource
+  status                 ClubStatus          @default(CANDIDATE)
+  notes                  String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  sessions ClubSession[]
+
+  @@index([userId, status])
+}
+
+model ClubSession {
+  id                    String          @id @default(cuid())
+  clubId                String
+  club                  Club            @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  dayOfWeek             Int
+  startTime              String?
+  type                  ClubSessionType @default(UNKNOWN)
+  distanceMiles         Float?
+  paceSecondsPerMile    Int?
+  meetingLocation       String?
+  isConfirmed           Boolean         @default(false)
+  rawText               String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  suggestions ClubSuggestion[]
+
+  @@index([clubId, dayOfWeek])
+}
+
+model ClubSuggestion {
+  id               String                @id @default(cuid())
+  plannedWorkoutId String                @unique
+  plannedWorkout   PlannedWorkout        @relation(fields: [plannedWorkoutId], references: [id], onDelete: Cascade)
+  clubSessionId    String
+  clubSession      ClubSession           @relation(fields: [clubSessionId], references: [id])
+  matchScore       Float?
+  matchReason      String?
+  status           ClubSuggestionStatus  @default(SUGGESTED)
+  createdAt        DateTime              @default(now())
+}
+
+model Run {
+  id                    String          @id @default(cuid())
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id])
+  plannedWorkoutId      String?         @unique
+  plannedWorkout        PlannedWorkout? @relation(fields: [plannedWorkoutId], references: [id])
+  stravaActivityId      BigInt          @unique
+  name                  String?
+  sportType             String?
+  date                  DateTime
+  distanceMiles         Float
+  durationSeconds       Int
+  avgPaceSecondsPerMile Int
+  elevationGainFeet     Float?
+  sufferScore           Int?
+  perceivedExertion     Int?
+  notes                 String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([userId, date])
+}
