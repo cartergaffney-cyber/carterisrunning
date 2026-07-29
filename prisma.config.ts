@@ -9,6 +9,12 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // The CLI (migrate, studio, etc.) uses the direct/unpooled connection --
+    // Neon's pgbouncer pooler doesn't support the session-level features
+    // (advisory locks, prepared statements) schema-changing operations rely
+    // on. The actual app always connects via the pooled DATABASE_URL,
+    // passed directly to the driver adapter in src/lib/db.ts -- this
+    // config's datasource.url has no bearing on that runtime connection.
+    url: process.env["DATABASE_URL_UNPOOLED"],
   },
 });
