@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
 
 export function DiscoverClubsButton() {
   const router = useRouter();
@@ -33,14 +34,10 @@ export function DiscoverClubsButton() {
 
   return (
     <div className="flex flex-col gap-1">
-      <button
-        onClick={handleClick}
-        disabled={loading}
-        className="w-fit rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-50"
-      >
-        {loading ? "Searching..." : "Discover clubs"}
-      </button>
-      {result && <p className="text-xs text-zinc-500 dark:text-zinc-400">{result}</p>}
+      <Button onClick={handleClick} disabled={loading} className="w-fit">
+        {loading ? "Searching…" : "Discover clubs"}
+      </Button>
+      {result && <p className="text-xs text-muted-foreground">{result}</p>}
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );

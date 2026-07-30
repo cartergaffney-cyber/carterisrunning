@@ -48,6 +48,21 @@ export async function getSessionUserId(): Promise<string | null> {
   }
 }
 
+// Signature-only check (no DB lookup) for use in proxy.ts. A cookie that
+// exists but fails verification must be treated the same as no cookie at
+// all, or an expired/invalid token traps the user in a login<->dashboard
+// redirect loop: proxy lets the request through because the cookie exists,
+// then the page's getCurrentUser() rejects it and redirects to /login,
+// where proxy sees the (still-present) cookie and bounces back.
+export async function verifySessionToken(token: string): Promise<boolean> {
+  try {
+    await jwtVerify(token, getSecretKey());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function getCurrentUser() {
   const userId = await getSessionUserId();
   if (!userId) return null;

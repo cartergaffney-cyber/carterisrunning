@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Select, Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 
 interface ClubSessionData {
   id: string;
@@ -42,62 +45,44 @@ export function ClubSessionRow({ clubId, session }: { clubId: string; session: C
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md border border-zinc-200 p-2 text-sm dark:border-zinc-800">
-      <select
-        value={dayOfWeek}
-        onChange={(e) => setDayOfWeek(Number(e.target.value))}
-        className="rounded border border-zinc-300 px-1.5 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
-      >
+    <div className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2 text-sm">
+      <Select value={dayOfWeek} onChange={(e) => setDayOfWeek(Number(e.target.value))} className="px-1.5 py-1 text-xs">
         {DAY_LABELS.map((label, i) => (
           <option key={i} value={i}>
             {label}
           </option>
         ))}
-      </select>
-      <input
+      </Select>
+      <Input
         type="text"
         placeholder="HH:mm"
         value={startTime}
         onChange={(e) => setStartTime(e.target.value)}
-        className="w-16 rounded border border-zinc-300 px-1.5 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-16 px-1.5 py-1 text-xs"
       />
-      <select
-        value={type}
-        onChange={(e) => setType(e.target.value)}
-        className="rounded border border-zinc-300 px-1.5 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
-      >
+      <Select value={type} onChange={(e) => setType(e.target.value)} className="px-1.5 py-1 text-xs">
         {SESSION_TYPES.map((t) => (
           <option key={t} value={t}>
             {t.replace("_", " ")}
           </option>
         ))}
-      </select>
-      <input
+      </Select>
+      <Input
         type="number"
         placeholder="mi"
         value={distanceMiles}
         onChange={(e) => setDistanceMiles(e.target.value)}
-        className="w-16 rounded border border-zinc-300 px-1.5 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-16 px-1.5 py-1 text-xs"
       />
-      <button
-        onClick={() => save()}
-        disabled={saving}
-        className="rounded-full border border-zinc-300 px-2 py-1 text-xs disabled:opacity-50 dark:border-zinc-700"
-      >
+      <Button variant="secondary" onClick={() => save()} disabled={saving} className="px-2 py-1 text-xs">
         Save
-      </button>
+      </Button>
       {session.isConfirmed ? (
-        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-          Confirmed
-        </span>
+        <Badge tone="success">Confirmed</Badge>
       ) : (
-        <button
-          onClick={() => save({ isConfirmed: true })}
-          disabled={saving}
-          className="rounded-full bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700 disabled:opacity-50 dark:bg-sky-950 dark:text-sky-300"
-        >
+        <Button variant="secondary" onClick={() => save({ isConfirmed: true })} disabled={saving} className="px-2 py-1 text-xs">
           Confirm
-        </button>
+        </Button>
       )}
     </div>
   );

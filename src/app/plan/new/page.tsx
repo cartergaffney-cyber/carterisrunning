@@ -9,8 +9,8 @@ export default async function NewPlanPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-8">
-      <h1 className="text-2xl font-semibold">Set up a training plan</h1>
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-8">
+      <h1 className="text-2xl font-semibold tracking-tight">Set up a training plan</h1>
       <PlanSetupWizard />
     </div>
   );

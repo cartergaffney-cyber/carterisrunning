@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
 
 interface CandidateWorkout {
   id: string;
@@ -50,44 +51,35 @@ export function LinkWorkoutModal({ runId, currentPlannedWorkoutId, candidates }:
       <div className="flex flex-col gap-2">
         <p className="text-sm text-emerald-700 dark:text-emerald-300">Linked to a planned workout.</p>
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-        <button
-          onClick={() => link(null)}
-          disabled={submitting}
-          className="w-fit rounded-full border border-zinc-300 px-4 py-1.5 text-sm disabled:opacity-50 dark:border-zinc-700"
-        >
-          {submitting ? "Unlinking..." : "Unlink"}
-        </button>
+        <Button variant="secondary" onClick={() => link(null)} disabled={submitting} className="w-fit">
+          {submitting ? "Unlinking…" : "Unlink"}
+        </Button>
       </div>
     );
   }
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="w-fit rounded-full border border-zinc-300 px-4 py-1.5 text-sm dark:border-zinc-700"
-      >
+      <Button variant="secondary" onClick={() => setOpen(true)} className="w-fit">
         Link to a planned workout
-      </button>
+      </Button>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+    <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3">
       <p className="text-sm font-medium">Link this run to:</p>
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-      {candidates.length === 0 && (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">No nearby planned workouts found.</p>
-      )}
+      {candidates.length === 0 && <p className="text-sm text-muted-foreground">No nearby planned workouts found.</p>}
       <div className="flex flex-col gap-2">
         {candidates.map((candidate) => (
           <button
             key={candidate.id}
             disabled={submitting || candidate.linkedToOtherRun}
             onClick={() => link(candidate.id)}
-            className="flex flex-col items-start gap-0.5 rounded-md border border-zinc-200 p-2 text-left text-sm disabled:opacity-40 dark:border-zinc-800"
+            className="flex flex-col items-start gap-0.5 rounded-md border border-border p-2 text-left text-sm transition-colors hover:border-accent disabled:opacity-40"
           >
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="text-xs text-muted-foreground">
               {new Date(candidate.date).toLocaleDateString(undefined, {
                 weekday: "short",
                 month: "short",
@@ -100,7 +92,7 @@ export function LinkWorkoutModal({ runId, currentPlannedWorkoutId, candidates }:
           </button>
         ))}
       </div>
-      <button onClick={() => setOpen(false)} className="w-fit text-sm text-zinc-500 underline dark:text-zinc-400">
+      <button onClick={() => setOpen(false)} className="w-fit text-sm text-muted-foreground underline">
         Cancel
       </button>
     </div>

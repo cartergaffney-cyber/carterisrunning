@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Running Trainer",
+  title: "Carter Is Running",
   description: "Training plans, run club matching, and Strava-synced tracking.",
+  icons: { icon: "/branding/carter-is-running-icon.svg" },
 };
 
 export default function RootLayout({

@@ -15,8 +15,8 @@ function ChartTooltip({
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-      <p className="mb-1 text-zinc-500 dark:text-zinc-400">{label}</p>
+    <div className="rounded-md border border-border bg-surface px-3 py-2 text-xs shadow-sm">
+      <p className="mb-1 text-muted-foreground">{label}</p>
       <p className="flex items-center gap-1.5">
         <span className="inline-block h-0.5 w-3" style={{ backgroundColor: "var(--chart-green)" }} />
         <span className="font-semibold">{Math.round(payload[0].value)}%</span>
@@ -30,7 +30,7 @@ export function AdherenceChart({ data }: { data: AdherencePoint[] }) {
 
   if (elapsedWeeks.length === 0) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-muted-foreground">
         No completed weeks yet — adherence appears once your plan is underway.
       </p>
     );

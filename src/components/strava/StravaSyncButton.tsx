@@ -31,16 +31,16 @@ export function StravaSyncButton() {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <button
         onClick={handleSync}
         disabled={syncing}
-        className="flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+        className="flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:brightness-110 disabled:opacity-50"
         style={{ backgroundColor: "#FC4C02" }}
       >
-        {syncing ? "Syncing..." : "Sync Strava"}
+        {syncing ? "Syncing…" : "Sync Strava"}
       </button>
-      {result && <p className="text-xs text-zinc-500 dark:text-zinc-400">{result}</p>}
+      {result && <p className="text-xs text-muted-foreground">{result}</p>}
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );

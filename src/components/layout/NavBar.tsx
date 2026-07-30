@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -13,14 +14,17 @@ export async function NavBar() {
   if (!user) return null;
 
   return (
-    <nav className="flex items-center gap-4 border-b border-zinc-200 px-8 py-3 dark:border-zinc-800">
-      <span className="text-sm font-semibold">Running Trainer</span>
-      <div className="flex gap-3">
+    <nav className="flex items-center gap-6 border-b border-border px-8 py-3">
+      <Link href="/dashboard" className="flex items-center gap-2">
+        <Image src="/branding/carter-is-running-icon.svg" alt="" width={22} height={22} className="rounded-md" />
+        <span className="text-sm font-semibold tracking-tight">Carter Is Running</span>
+      </Link>
+      <div className="flex gap-5">
         {NAV_LINKS.map((link) => (
           <Link
             key={link.href}
             href={link.href}
-            className="text-sm text-zinc-600 hover:underline dark:text-zinc-300"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             {link.label}
           </Link>

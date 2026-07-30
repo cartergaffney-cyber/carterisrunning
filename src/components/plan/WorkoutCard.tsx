@@ -15,15 +15,17 @@ const WORKOUT_TYPE_LABELS: Record<string, string> = {
   RACE: "RACE DAY",
 };
 
+// Deliberately varied hues per workout type for at-a-glance recognition --
+// not tied to the app's single accent token, which only carries one meaning.
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
-  REST: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
+  REST: "bg-surface-muted text-muted-foreground",
   EASY: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
   LONG_RUN: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
   TEMPO: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
   INTERVAL: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
   RACE_PACE: "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
   BACK_TO_BACK_LONG: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-  CROSS_TRAIN: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
+  CROSS_TRAIN: "bg-surface-muted text-muted-foreground",
   RACE: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300",
 };
 
@@ -51,14 +53,14 @@ export function WorkoutCard({
   routeFileName,
 }: WorkoutCardProps) {
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+    <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+        <span className="text-xs text-muted-foreground">
           {date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
         </span>
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-            WORKOUT_TYPE_COLORS[workoutType] ?? "bg-zinc-100 text-zinc-500"
+            WORKOUT_TYPE_COLORS[workoutType] ?? "bg-surface-muted text-muted-foreground"
           }`}
         >
           {WORKOUT_TYPE_LABELS[workoutType] ?? workoutType}

@@ -39,18 +39,15 @@ export function RouteAction({ workoutId, status, fileName, isBackup }: RouteActi
   if (status === "READY" && fileName) {
     return (
       <div className="flex items-center gap-2">
-        <a
-          href={`/api/workouts/${workoutId}/route`}
-          className="text-xs font-medium text-blue-600 underline dark:text-blue-400"
-        >
+        <a href={`/api/workouts/${workoutId}/route`} className="text-xs font-medium text-accent underline">
           {isBackup ? "Download backup route" : "Download route"}
         </a>
         <button
           onClick={generate}
           disabled={generating}
-          className="text-xs text-zinc-400 underline disabled:opacity-50"
+          className="text-xs text-muted-foreground underline disabled:opacity-50"
         >
-          {generating ? "Regenerating..." : "Regenerate"}
+          {generating ? "Regenerating…" : "Regenerate"}
         </button>
       </div>
     );
@@ -61,9 +58,9 @@ export function RouteAction({ workoutId, status, fileName, isBackup }: RouteActi
       <button
         onClick={generate}
         disabled={generating}
-        className="w-fit text-xs font-medium text-blue-600 underline disabled:opacity-50 dark:text-blue-400"
+        className="w-fit text-xs font-medium text-accent underline disabled:opacity-50"
       >
-        {generating ? "Generating route..." : status === "FAILED" ? "Retry route generation" : "Generate route"}
+        {generating ? "Generating route…" : status === "FAILED" ? "Retry route generation" : "Generate route"}
       </button>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>

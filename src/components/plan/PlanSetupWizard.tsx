@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RaceSearchStep } from "./RaceSearchStep";
 import { formatPaceSecondsPerMile } from "@/lib/utils/pace";
+import { Card } from "@/components/ui/Card";
+import { Input, Select } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 interface FitnessSnapshotPreview {
   windowWeeks: number;
@@ -97,124 +100,115 @@ export function PlanSetupWizard() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-md flex-col gap-5">
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Find your race (optional)</span>
-        <RaceSearchStep
-          onConfirmed={({ raceId, raceDistance, raceDate }) => {
-            setRaceId(raceId);
-            if (raceDistance) setRaceDistance(raceDistance);
-            if (raceDate) setRaceDate(raceDate);
-          }}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="raceDistance" className="text-sm font-medium">
-          Race distance
-        </label>
-        <select
-          id="raceDistance"
-          value={raceDistance}
-          onChange={(e) => setRaceDistance(e.target.value)}
-          className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-        >
-          {RACE_DISTANCE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="raceDate" className="text-sm font-medium">
-          Race date
-        </label>
-        <input
-          id="raceDate"
-          type="date"
-          required
-          value={raceDate}
-          onChange={(e) => setRaceDate(e.target.value)}
-          className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="currentWeeklyMileageMiles" className="text-sm font-medium">
-          Current weekly mileage (miles)
-        </label>
-        <input
-          id="currentWeeklyMileageMiles"
-          type="number"
-          min={1}
-          max={300}
-          step={0.5}
-          required
-          value={currentWeeklyMileageMiles}
-          onChange={(e) => {
-            mileageEditedByUser.current = true;
-            setCurrentWeeklyMileageMiles(e.target.value);
-          }}
-          className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-        />
-        {fitnessSnapshot && fitnessSnapshot.avgWeeklyMileageMiles > 0 && (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            From your last {fitnessSnapshot.windowWeeks} weeks on Strava: avg{" "}
-            {fitnessSnapshot.avgWeeklyMileageMiles.toFixed(1)} mi/week (
-            {TREND_LABELS[fitnessSnapshot.mileageTrend]})
-            {fitnessSnapshot.bestRecentEffortDistanceMiles && fitnessSnapshot.riegelEstimatedPaceSecondsPerMile
-              ? `, best recent effort ~${formatPaceSecondsPerMile(
-                  fitnessSnapshot.riegelEstimatedPaceSecondsPerMile
-                )} 10K pace`
-              : ""}
-            . Pre-filled above — edit if it doesn&rsquo;t look right.
-          </p>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Goal finish time (optional)</span>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            min={0}
-            placeholder="hh"
-            value={goalHours}
-            onChange={(e) => setGoalHours(e.target.value)}
-            className="w-16 rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          <input
-            type="number"
-            min={0}
-            max={59}
-            placeholder="mm"
-            value={goalMinutes}
-            onChange={(e) => setGoalMinutes(e.target.value)}
-            className="w-16 rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          <input
-            type="number"
-            min={0}
-            max={59}
-            placeholder="ss"
-            value={goalSeconds}
-            onChange={(e) => setGoalSeconds(e.target.value)}
-            className="w-16 rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+    <Card>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium">Find your race (optional)</span>
+          <RaceSearchStep
+            onConfirmed={({ raceId, raceDistance, raceDate }) => {
+              setRaceId(raceId);
+              if (raceDistance) setRaceDistance(raceDistance);
+              if (raceDate) setRaceDate(raceDate);
+            }}
           />
         </div>
-      </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <div className="flex flex-col gap-1">
+          <label htmlFor="raceDistance" className="text-sm font-medium">
+            Race distance
+          </label>
+          <Select id="raceDistance" value={raceDistance} onChange={(e) => setRaceDistance(e.target.value)}>
+            {RACE_DISTANCE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
+        </div>
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-full bg-foreground px-5 py-3 text-base font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
-      >
-        {submitting ? "Generating plan..." : "Generate plan"}
-      </button>
-    </form>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="raceDate" className="text-sm font-medium">
+            Race date
+          </label>
+          <Input
+            id="raceDate"
+            type="date"
+            required
+            value={raceDate}
+            onChange={(e) => setRaceDate(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="currentWeeklyMileageMiles" className="text-sm font-medium">
+            Current weekly mileage (miles)
+          </label>
+          <Input
+            id="currentWeeklyMileageMiles"
+            type="number"
+            min={1}
+            max={300}
+            step={0.5}
+            required
+            value={currentWeeklyMileageMiles}
+            onChange={(e) => {
+              mileageEditedByUser.current = true;
+              setCurrentWeeklyMileageMiles(e.target.value);
+            }}
+          />
+          {fitnessSnapshot && fitnessSnapshot.avgWeeklyMileageMiles > 0 && (
+            <p className="text-xs text-muted-foreground">
+              From your last {fitnessSnapshot.windowWeeks} weeks on Strava: avg{" "}
+              {fitnessSnapshot.avgWeeklyMileageMiles.toFixed(1)} mi/week (
+              {TREND_LABELS[fitnessSnapshot.mileageTrend]})
+              {fitnessSnapshot.bestRecentEffortDistanceMiles && fitnessSnapshot.riegelEstimatedPaceSecondsPerMile
+                ? `, best recent effort ~${formatPaceSecondsPerMile(
+                    fitnessSnapshot.riegelEstimatedPaceSecondsPerMile
+                  )} 10K pace`
+                : ""}
+              . Pre-filled above — edit if it doesn&rsquo;t look right.
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium">Goal finish time (optional)</span>
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              min={0}
+              placeholder="hh"
+              value={goalHours}
+              onChange={(e) => setGoalHours(e.target.value)}
+              className="w-16"
+            />
+            <Input
+              type="number"
+              min={0}
+              max={59}
+              placeholder="mm"
+              value={goalMinutes}
+              onChange={(e) => setGoalMinutes(e.target.value)}
+              className="w-16"
+            />
+            <Input
+              type="number"
+              min={0}
+              max={59}
+              placeholder="ss"
+              value={goalSeconds}
+              onChange={(e) => setGoalSeconds(e.target.value)}
+              className="w-16"
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+        <Button type="submit" disabled={submitting} className="w-full py-3 text-base">
+          {submitting ? "Generating plan…" : "Generate plan"}
+        </Button>
+      </form>
+    </Card>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Input, Select } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 interface RaceCandidate {
   source: string;
@@ -144,8 +146,8 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
 
   if (confirmedSummary) {
     return (
-      <div className="flex flex-col gap-1 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-800">
-        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Race</span>
+      <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-3 text-sm">
+        <span className="text-xs font-medium text-muted-foreground">Race</span>
         <span>{confirmedSummary}</span>
         <button
           type="button"
@@ -155,7 +157,7 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
             setResults(null);
             setShowConfirmForm(false);
           }}
-          className="w-fit text-xs text-zinc-500 underline dark:text-zinc-400"
+          className="w-fit text-xs text-muted-foreground underline"
         >
           Change
         </button>
@@ -165,50 +167,42 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
 
   if (!expanded) {
     return (
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        className="w-fit rounded-full border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-      >
+      <Button type="button" variant="secondary" onClick={() => setExpanded(true)} className="w-fit">
         Look up a race by name
-      </button>
+      </Button>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+    <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
       <form onSubmit={handleSearch} className="flex flex-col gap-2">
         <div className="flex gap-2">
-          <input
+          <Input
             type="text"
             placeholder="Race name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="flex-1"
           />
-          <input
+          <Input
             type="text"
             placeholder="City (optional)"
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            className="w-32 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="w-32"
           />
-          <input
+          <Input
             type="text"
             placeholder="State (optional)"
             value={state}
             onChange={(e) => setState(e.target.value)}
-            className="w-24 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="w-24"
           />
         </div>
-        <button
-          type="submit"
-          disabled={searching}
-          className="w-fit rounded-full border border-zinc-300 px-4 py-1.5 text-sm disabled:opacity-50 dark:border-zinc-700"
-        >
-          {searching ? "Searching..." : "Search"}
-        </button>
+        <Button type="submit" variant="secondary" disabled={searching} className="w-fit">
+          {searching ? "Searching…" : "Search"}
+        </Button>
       </form>
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
@@ -216,19 +210,17 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
       {results && !showConfirmForm && (
         <div className="flex flex-col gap-2">
           {results.length === 0 && (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              No results found. You can enter the details manually.
-            </p>
+            <p className="text-sm text-muted-foreground">No results found. You can enter the details manually.</p>
           )}
           {results.map((candidate, i) => (
             <button
               key={i}
               type="button"
               onClick={() => selectCandidate(candidate)}
-              className="flex flex-col items-start gap-0.5 rounded-md border border-zinc-200 p-2 text-left text-sm dark:border-zinc-800"
+              className="flex flex-col items-start gap-0.5 rounded-md border border-border p-2 text-left text-sm transition-colors hover:border-accent"
             >
               <span className="font-medium">{candidate.name}</span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              <span className="text-xs text-muted-foreground">
                 {candidate.raceDate ? new Date(candidate.raceDate).toLocaleDateString() : "date unknown"}
                 {candidate.city ? ` · ${candidate.city}, ${candidate.state ?? ""}` : ""}
                 {candidate.distanceMeters
@@ -238,71 +230,56 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
               </span>
             </button>
           ))}
-          <button type="button" onClick={selectManual} className="w-fit text-sm text-zinc-500 underline dark:text-zinc-400">
+          <button type="button" onClick={selectManual} className="w-fit text-sm text-muted-foreground underline">
             None of these — enter manually
           </button>
         </div>
       )}
 
       {showConfirmForm && (
-        <div className="flex flex-col gap-2 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+        <div className="flex flex-col gap-2 border-t border-border pt-3">
           <p className="text-sm font-medium">Confirm race details</p>
-          <input
+          <Input
             type="text"
             placeholder="Race name"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
           <div className="flex gap-2">
-            <input
-              type="date"
-              value={form.raceDate}
-              onChange={(e) => setForm({ ...form, raceDate: e.target.value })}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            />
-            <input
+            <Input type="date" value={form.raceDate} onChange={(e) => setForm({ ...form, raceDate: e.target.value })} />
+            <Input
               type="text"
               placeholder="City"
               value={form.city}
               onChange={(e) => setForm({ ...form, city: e.target.value })}
-              className="w-28 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              className="w-28"
             />
-            <input
+            <Input
               type="text"
               placeholder="State"
               value={form.state}
               onChange={(e) => setForm({ ...form, state: e.target.value })}
-              className="w-20 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              className="w-20"
             />
           </div>
           <div className="flex gap-2">
-            <select
-              value={form.terrainType}
-              onChange={(e) => setForm({ ...form, terrainType: e.target.value })}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            >
+            <Select value={form.terrainType} onChange={(e) => setForm({ ...form, terrainType: e.target.value })}>
               <option value="UNKNOWN">Terrain unknown</option>
               <option value="ROAD">Road</option>
               <option value="TRAIL">Trail</option>
               <option value="MIXED">Mixed</option>
-            </select>
-            <input
+            </Select>
+            <Input
               type="number"
               placeholder="Elevation gain (ft)"
               value={form.elevationGainFeet}
               onChange={(e) => setForm({ ...form, elevationGainFeet: e.target.value })}
-              className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              className="flex-1"
             />
           </div>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={submitting || !form.name}
-            className="w-fit rounded-full bg-foreground px-4 py-1.5 text-sm font-medium text-background disabled:opacity-50"
-          >
-            {submitting ? "Saving..." : "Confirm race"}
-          </button>
+          <Button type="button" onClick={handleConfirm} disabled={submitting || !form.name} className="w-fit">
+            {submitting ? "Saving…" : "Confirm race"}
+          </Button>
         </div>
       )}
     </div>

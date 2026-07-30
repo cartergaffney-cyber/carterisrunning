@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/session";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/", "/login"];
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // /api/cron/* authenticates via a CRON_SECRET bearer header, not a user
@@ -14,13 +14,16 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/api/auth/") ||
     pathname.startsWith("/api/cron/");
 
-  const hasSession = request.cookies.has(SESSION_COOKIE_NAME);
+  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const hasValidSession = !!token && (await verifySessionToken(token));
 
-  if (!hasSession && !isPublicPath) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (!hasValidSession && !isPublicPath) {
+    const response = NextResponse.redirect(new URL("/login", request.url));
+    if (token) response.cookies.delete(SESSION_COOKIE_NAME);
+    return response;
   }
 
-  if (hasSession && pathname === "/login") {
+  if (hasValidSession && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -28,5 +31,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

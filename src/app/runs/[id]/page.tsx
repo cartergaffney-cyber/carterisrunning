@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { LinkWorkoutModal } from "@/components/runs/LinkWorkoutModal";
+import { StatTile } from "@/components/dashboard/StatTile";
 import { addDays } from "@/lib/utils/date";
 import { formatDuration, formatPaceSecondsPerMile } from "@/lib/utils/pace";
 
@@ -51,39 +52,25 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-8">
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">{run.name ?? "Run"}</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {run.date.toLocaleDateString(undefined, { dateStyle: "long" })}
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{run.name ?? "Run"}</h1>
+        <p className="text-sm text-muted-foreground">{run.date.toLocaleDateString(undefined, { dateStyle: "long" })}</p>
       </div>
 
-      <div className="grid max-w-md grid-cols-2 gap-4">
-        <div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">Distance</p>
-          <p className="text-lg font-medium">{run.distanceMiles.toFixed(2)} mi</p>
-        </div>
-        <div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">Duration</p>
-          <p className="text-lg font-medium">{formatDuration(run.durationSeconds)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">Pace</p>
-          <p className="text-lg font-medium">{formatPaceSecondsPerMile(run.avgPaceSecondsPerMile)}</p>
-        </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatTile label="Distance" value={`${run.distanceMiles.toFixed(2)} mi`} />
+        <StatTile label="Duration" value={formatDuration(run.durationSeconds)} />
+        <StatTile label="Pace" value={formatPaceSecondsPerMile(run.avgPaceSecondsPerMile)} />
         {run.elevationGainFeet != null && (
-          <div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Elevation gain</p>
-            <p className="text-lg font-medium">{Math.round(run.elevationGainFeet)} ft</p>
-          </div>
+          <StatTile label="Elevation gain" value={`${Math.round(run.elevationGainFeet)} ft`} />
         )}
       </div>
 
       {activePlan ? (
         <LinkWorkoutModal runId={run.id} currentPlannedWorkoutId={run.plannedWorkoutId} candidates={candidates} />
       ) : (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">No active training plan to link against.</p>
+        <p className="text-sm text-muted-foreground">No active training plan to link against.</p>
       )}
     </div>
   );

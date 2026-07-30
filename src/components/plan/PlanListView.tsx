@@ -1,4 +1,5 @@
 import { WorkoutCard } from "./WorkoutCard";
+import { Badge } from "@/components/ui/Badge";
 
 interface WorkoutData {
   id: string;
@@ -35,18 +36,10 @@ export function PlanListView({ weeks }: { weeks: WeekData[] }) {
         return (
           <section key={week.weekNumber} className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold">Week {week.weekNumber}</h2>
-              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium dark:bg-zinc-800">
-                {PHASE_LABELS[week.phase] ?? week.phase}
-              </span>
-              {week.isStepBack && (
-                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
-                  Step-back
-                </span>
-              )}
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                ~{weeklyMileage.toFixed(1)} mi
-              </span>
+              <h2 className="text-lg font-semibold tracking-tight">Week {week.weekNumber}</h2>
+              <Badge>{PHASE_LABELS[week.phase] ?? week.phase}</Badge>
+              {week.isStepBack && <Badge tone="info">Step-back</Badge>}
+              <span className="text-xs text-muted-foreground">~{weeklyMileage.toFixed(1)} mi</span>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {week.workouts.map((workout) => (

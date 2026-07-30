@@ -22,16 +22,16 @@ export default async function ClubsPage() {
   const dismissed = clubs.filter((c) => c.status === "DISMISSED");
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Run Clubs</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Run Clubs</h1>
         <DiscoverClubsButton />
       </div>
 
       {!user.homeCity && (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           Set your home address in{" "}
-          <Link href="/settings" className="underline">
+          <Link href="/settings" className="text-accent underline">
             Settings
           </Link>{" "}
           before discovering clubs.
@@ -39,9 +39,9 @@ export default async function ClubsPage() {
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Tracked</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Tracked</h2>
         {tracked.length === 0 && (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             No tracked clubs yet — track a candidate below to have it matched against your training plan.
           </p>
         )}
@@ -53,9 +53,9 @@ export default async function ClubsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Candidates</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Candidates</h2>
         {candidates.length === 0 && (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             No candidates yet — click &ldquo;Discover clubs&rdquo; above.
           </p>
         )}
@@ -68,7 +68,7 @@ export default async function ClubsPage() {
 
       {dismissed.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold">Dismissed</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Dismissed</h2>
           <div className="flex flex-col gap-3">
             {dismissed.map((club) => (
               <ClubCard key={club.id} club={club} />

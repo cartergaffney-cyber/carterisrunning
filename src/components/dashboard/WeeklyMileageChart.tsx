@@ -34,13 +34,13 @@ function ChartTooltip({
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-      <p className="mb-1 text-zinc-500 dark:text-zinc-400">{label}</p>
+    <div className="rounded-md border border-border bg-surface px-3 py-2 text-xs shadow-sm">
+      <p className="mb-1 text-muted-foreground">{label}</p>
       {payload.map((entry) => (
         <p key={entry.name} className="flex items-center gap-1.5">
           <span className="inline-block h-0.5 w-3" style={{ backgroundColor: entry.color }} />
           <span className="font-semibold">{entry.value.toFixed(1)} mi</span>
-          <span className="text-zinc-500 dark:text-zinc-400">{entry.name}</span>
+          <span className="text-muted-foreground">{entry.name}</span>
         </p>
       ))}
     </div>
@@ -52,7 +52,7 @@ export function WeeklyMileageChart({ data }: { data: WeeklyMileagePoint[] }) {
 
   if (!hasData) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-muted-foreground">
         No mileage data yet — sync Strava or generate a training plan to see this chart.
       </p>
     );

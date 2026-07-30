@@ -63,12 +63,12 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
   const weeks = Array.from(weeksByNumber.values()).sort((a, b) => a.weekNumber - b.weekNumber);
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-2xl font-semibold tracking-tight">
           {DISTANCE_LABELS[plan.raceDistance as RaceDistance]} Training Plan
         </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           Race day {plan.raceDate.toLocaleDateString(undefined, { dateStyle: "long" })} &middot; {plan.totalWeeks}{" "}
           weeks &middot; {plan.status}
         </p>

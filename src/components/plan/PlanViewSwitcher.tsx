@@ -32,16 +32,16 @@ export function PlanViewSwitcher({ weeks }: { weeks: WeekData[] }) {
       <div className="flex gap-2">
         <button
           onClick={() => setView("list")}
-          className={`rounded-full px-3 py-1 text-sm font-medium ${
-            view === "list" ? "bg-foreground text-background" : "border border-zinc-300 dark:border-zinc-700"
+          className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+            view === "list" ? "bg-accent text-accent-foreground" : "border border-border text-muted-foreground hover:text-foreground"
           }`}
         >
           List
         </button>
         <button
           onClick={() => setView("calendar")}
-          className={`rounded-full px-3 py-1 text-sm font-medium ${
-            view === "calendar" ? "bg-foreground text-background" : "border border-zinc-300 dark:border-zinc-700"
+          className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+            view === "calendar" ? "bg-accent text-accent-foreground" : "border border-border text-muted-foreground hover:text-foreground"
           }`}
         >
           Calendar
