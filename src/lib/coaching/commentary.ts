@@ -26,6 +26,19 @@ export interface CoachCommentaryInput {
   /** Any stable per-run identifier, used only to deterministically pick among phrase variants so commentary doesn't read identically run after run. */
   varietySeed?: string;
   adaptation: CommentaryAdaptation | null;
+  /**
+   * Drops the supplementary heart-rate and days-to-race sentences, keeping
+   * just the core grading (comparison + effect) and anything safety- or
+   * action-relevant (spike risk, plan adaptations). Driven by thumbs-down
+   * feedback on this workout-type/status category -- see
+   * commentary-feedback.ts's shouldPreferConciseCommentary().
+   */
+  concise?: boolean;
+}
+
+/** Stable key used to bucket feedback by workout-type/outcome category, e.g. "EASY:TOO_HARD". */
+export function commentaryCategoryKey(workoutType: WorkoutType, status: ComparisonStatus | null): string {
+  return `${workoutType}:${status ?? "NONE"}`;
 }
 
 /**
@@ -45,8 +58,7 @@ export function generateCoachCommentary(input: CoachCommentaryInput): string {
     comparisonSentence(input),
     effectSentence(input),
     spikeRiskSentence(input),
-    heartRateSentence(input),
-    progressSentence(input.daysToRace),
+    ...(input.concise ? [] : [heartRateSentence(input), progressSentence(input.daysToRace)]),
   ];
   if (input.adaptation) {
     sentences.push(input.adaptation.triggerSummary);

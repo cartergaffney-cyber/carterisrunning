@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { HelpfulFeedback } from "@/components/ui/HelpfulFeedback";
 
 // Below this length the text almost never wraps past two lines at card
 // width, so the toggle would have nothing to reveal -- skip rendering it.
 const SHOW_TOGGLE_THRESHOLD = 100;
 
-export function CoachCommentaryText({ text }: { text: string }) {
+interface CoachCommentaryTextProps {
+  text: string;
+  runId?: string | null;
+  helpful?: boolean | null;
+}
+
+export function CoachCommentaryText({ text, runId = null, helpful = null }: CoachCommentaryTextProps) {
   const [expanded, setExpanded] = useState(false);
   const canToggle = text.length > SHOW_TOGGLE_THRESHOLD;
 
@@ -20,6 +27,14 @@ export function CoachCommentaryText({ text }: { text: string }) {
         >
           {expanded ? "Show less" : "Show more"}
         </button>
+      )}
+      {runId && (
+        <HelpfulFeedback
+          endpoint={`/api/runs/${runId}/commentary-feedback`}
+          initialHelpful={helpful}
+          label="Was this note helpful?"
+          size="xs"
+        />
       )}
     </div>
   );

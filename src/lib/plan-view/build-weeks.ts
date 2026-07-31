@@ -42,6 +42,7 @@ export function buildWeeksFromPlan(plannedWorkouts: PlannedWorkoutWithRelations[
       actualPaceSecondsPerMile: workout.run?.avgPaceSecondsPerMile ?? null,
       comparisonStatus,
       coachCommentary: workout.run?.coachCommentary ?? null,
+      commentaryHelpful: workout.run?.commentaryHelpful ?? null,
       adaptationReason: workout.adaptationReason,
       clubSuggestionReason: workout.clubSuggestion?.matchReason ?? null,
       routeStatus: workout.generatedRoute?.status ?? null,

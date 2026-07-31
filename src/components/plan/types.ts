@@ -14,6 +14,7 @@ export interface WorkoutData {
   actualPaceSecondsPerMile: number | null;
   comparisonStatus: ComparisonStatus | null;
   coachCommentary: string | null;
+  commentaryHelpful: boolean | null;
   adaptationReason: string | null;
   clubSuggestionReason: string | null;
   routeStatus: string | null;

@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { compareRunToWorkout } from "./compare-run";
 import { classifyActualEffortTier, classifyScheduledTier } from "./effort-tier";
-import { generateCoachCommentary } from "./commentary";
+import { generateCoachCommentary, commentaryCategoryKey } from "./commentary";
+import { shouldPreferConciseCommentary } from "./commentary-feedback";
 import { adaptFutureWorkouts } from "./adapt-plan";
 import { getTrailingLongestRunMiles, assessSpikeRisk } from "./long-run-spike-risk";
 import { diffInDays, today } from "@/lib/utils/date";
@@ -44,6 +45,7 @@ interface GradedRun {
   workoutType: WorkoutType;
   comparisonStatus: ReturnType<typeof compareRunToWorkout>;
   commentary: string;
+  commentaryCategory: string;
 }
 
 async function gradeRun(runId: string, workoutId: string): Promise<GradedRun | null> {
@@ -71,6 +73,9 @@ async function gradeRun(runId: string, workoutId: string): Promise<GradedRun | n
     spikeRisk = assessSpikeRisk(run.distanceMiles, trailingLongest);
   }
 
+  const commentaryCategory = commentaryCategoryKey(workoutType, comparison?.status ?? null);
+  const concise = await shouldPreferConciseCommentary(workout.trainingPlan.userId, commentaryCategory);
+
   const commentary = generateCoachCommentary({
     workoutType,
     phase: workout.phase,
@@ -81,9 +86,10 @@ async function gradeRun(runId: string, workoutId: string): Promise<GradedRun | n
     spikeRisk,
     varietySeed: run.id,
     adaptation: null,
+    concise,
   });
 
-  return { run, workout, workoutType, comparisonStatus: comparison, commentary };
+  return { run, workout, workoutType, comparisonStatus: comparison, commentary, commentaryCategory };
 }
 
 /**
@@ -95,7 +101,10 @@ async function gradeRun(runId: string, workoutId: string): Promise<GradedRun | n
 export async function generateCommentaryForRun(runId: string, workoutId: string): Promise<void> {
   const graded = await gradeRun(runId, workoutId);
   if (!graded) return;
-  await prisma.run.update({ where: { id: runId }, data: { coachCommentary: graded.commentary } });
+  await prisma.run.update({
+    where: { id: runId },
+    data: { coachCommentary: graded.commentary, commentaryCategory: graded.commentaryCategory },
+  });
 }
 
 /**
@@ -131,5 +140,8 @@ export async function runCoachingPipeline(runId: string, workoutId: string): Pro
     commentary = `${commentary} ${adaptation.triggerSummary}`;
   }
 
-  await prisma.run.update({ where: { id: runId }, data: { coachCommentary: commentary } });
+  await prisma.run.update({
+    where: { id: runId },
+    data: { coachCommentary: commentary, commentaryCategory: graded.commentaryCategory },
+  });
 }

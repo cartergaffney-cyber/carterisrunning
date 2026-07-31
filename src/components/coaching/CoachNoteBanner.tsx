@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { NoteFeedback } from "./NoteFeedback";
+import { HelpfulFeedback } from "@/components/ui/HelpfulFeedback";
 
 interface CoachNoteBannerProps {
   id: string;
@@ -34,7 +34,11 @@ export function CoachNoteBanner({ id, message, helpful = null }: CoachNoteBanner
           <Link href="/messages" className="text-xs font-medium text-accent underline">
             View all messages
           </Link>
-          <NoteFeedback noteId={id} initialHelpful={helpful} />
+          <HelpfulFeedback
+            endpoint={`/api/coach-notes/${id}/feedback`}
+            initialHelpful={helpful}
+            label="Was this note helpful?"
+          />
         </div>
       </div>
       <button

@@ -338,10 +338,13 @@ model Run {
   perceivedExertion     Int?
   notes                 String?
   coachCommentary       String?
+  commentaryCategory    String?
+  commentaryHelpful     Boolean?
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
   @@index([userId, date])
+  @@index([commentaryCategory, commentaryHelpful])
 }
 
 model CoachNote {

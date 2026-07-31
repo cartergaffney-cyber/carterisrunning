@@ -48,6 +48,7 @@ interface WorkoutCardProps {
   actualPaceSecondsPerMile?: number | null;
   comparisonStatus?: ComparisonStatus | null;
   coachCommentary?: string | null;
+  commentaryHelpful?: boolean | null;
   adaptationReason?: string | null;
   clubSuggestionReason?: string | null;
   routeStatus?: string | null;
@@ -67,6 +68,7 @@ export function WorkoutCard({
   actualPaceSecondsPerMile,
   comparisonStatus,
   coachCommentary,
+  commentaryHelpful,
   adaptationReason,
   clubSuggestionReason,
   routeStatus,
@@ -129,7 +131,9 @@ export function WorkoutCard({
               </Link>
             )}
           </div>
-          {coachCommentary && <CoachCommentaryText text={coachCommentary} />}
+          {coachCommentary && (
+            <CoachCommentaryText text={coachCommentary} runId={runId ?? null} helpful={commentaryHelpful ?? null} />
+          )}
         </div>
       )}
 
