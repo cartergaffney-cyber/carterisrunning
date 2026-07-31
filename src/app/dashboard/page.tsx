@@ -73,7 +73,9 @@ export default async function DashboardPage() {
         </form>
       </div>
 
-      {activeCoachNote && <CoachNoteBanner id={activeCoachNote.id} message={activeCoachNote.message} />}
+      {activeCoachNote && (
+        <CoachNoteBanner id={activeCoachNote.id} message={activeCoachNote.message} helpful={activeCoachNote.helpful} />
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <StravaSyncButton />

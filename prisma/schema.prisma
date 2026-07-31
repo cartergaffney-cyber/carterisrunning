@@ -354,6 +354,8 @@ model CoachNote {
   message        String
   createdAt      DateTime      @default(now())
   dismissedAt    DateTime?
+  helpful        Boolean?
 
   @@index([userId, dismissedAt])
+  @@index([kind, helpful])
 }

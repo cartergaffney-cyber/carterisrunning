@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { NoteFeedback } from "./NoteFeedback";
 
 interface CoachNoteBannerProps {
   id: string;
   message: string;
+  helpful?: boolean | null;
 }
 
-export function CoachNoteBanner({ id, message }: CoachNoteBannerProps) {
+export function CoachNoteBanner({ id, message, helpful = null }: CoachNoteBannerProps) {
   const router = useRouter();
   const [dismissing, setDismissing] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -28,9 +30,12 @@ export function CoachNoteBanner({ id, message }: CoachNoteBannerProps) {
       <div className="flex flex-1 flex-col gap-1">
         <span className="text-xs font-semibold uppercase tracking-wide text-accent">Coach&rsquo;s note</span>
         <p className="text-sm text-foreground">{message}</p>
-        <Link href="/messages" className="w-fit text-xs font-medium text-accent underline">
-          View all messages
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href="/messages" className="text-xs font-medium text-accent underline">
+            View all messages
+          </Link>
+          <NoteFeedback noteId={id} initialHelpful={helpful} />
+        </div>
       </div>
       <button
         onClick={dismiss}

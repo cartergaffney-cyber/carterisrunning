@@ -3,6 +3,7 @@ import { addDays, diffInDays, today } from "@/lib/utils/date";
 import { compareRunToWorkout } from "./compare-run";
 import { describeWorkout } from "@/lib/plan-generator/workout-builder";
 import { getTrailingLongestRunMiles, maxSafeDistance } from "./long-run-spike-risk";
+import { shouldPreferConciseVariant } from "./note-feedback";
 import type { WorkoutType } from "@/lib/plan-generator/types";
 import type { TrainingPlan } from "@/generated/prisma/client";
 
@@ -179,20 +180,37 @@ async function applyRecalibration(plan: TrainingPlan, direction: RecalibrationDi
     data: { ...newPaces, lastRecalibratedAt: now },
   });
 
+  const kind = direction === "AHEAD" ? "PLAN_RECALIBRATED_FASTER" : "PLAN_RECALIBRATED_SLOWER";
+  const concise = await shouldPreferConciseVariant(plan.userId, kind);
+
   await prisma.coachNote.create({
     data: {
       userId: plan.userId,
       trainingPlanId: plan.id,
-      kind: direction === "AHEAD" ? "PLAN_RECALIBRATED_FASTER" : "PLAN_RECALIBRATED_SLOWER",
-      message: buildRecalibrationMessage(direction, stats, paceMultiplier),
+      kind,
+      message: buildRecalibrationMessage(direction, stats, paceMultiplier, concise),
     },
   });
 }
 
-function buildRecalibrationMessage(direction: RecalibrationDirection, stats: WindowStats, paceMultiplier: number): string {
+/**
+ * `concise` is driven by thumbs-down feedback on past notes of this kind
+ * (see note-feedback.ts) -- drops the framing/explanation sentences and
+ * states just the pace change once a user (or the user base overall) has
+ * voted a majority of these unhelpful.
+ */
+function buildRecalibrationMessage(
+  direction: RecalibrationDirection,
+  stats: WindowStats,
+  paceMultiplier: number,
+  concise: boolean
+): string {
   const pctPaceChange = Math.round(Math.abs(1 - paceMultiplier) * 100);
 
   if (direction === "AHEAD") {
+    if (concise) {
+      return `Target paces sped up by about ${pctPaceChange}% based on your last two weeks of runs.`;
+    }
     return (
       `Nice work — over the last two weeks, ${stats.tooHard} of your ${stats.graded} graded runs came in noticeably ` +
       `harder than planned. That's a sign your fitness has moved past what this plan assumed, so I've sped up your ` +
@@ -203,6 +221,9 @@ function buildRecalibrationMessage(direction: RecalibrationDirection, stats: Win
 
   const struggledCount = stats.tooEasy + stats.missed;
   const totalConsidered = stats.graded + stats.missed;
+  if (concise) {
+    return `Target paces eased by about ${pctPaceChange}% based on your last two weeks of runs.`;
+  }
   return (
     `Heads up — over the last two weeks, ${struggledCount} of your last ${totalConsidered} scheduled runs came in ` +
     `slower than planned or were missed. Rather than keep pushing a progression that isn't landing, I've eased your ` +

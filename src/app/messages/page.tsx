@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { DismissNoteButton } from "@/components/messages/DismissNoteButton";
+import { NoteFeedback } from "@/components/coaching/NoteFeedback";
 
 const KIND_LABELS: Record<string, string> = {
   PLAN_RECALIBRATED_FASTER: "Plan sped up",
@@ -51,6 +52,7 @@ export default async function MessagesPage() {
                 {!note.dismissedAt && <DismissNoteButton id={note.id} />}
               </div>
               <p className="text-sm">{note.message}</p>
+              <NoteFeedback noteId={note.id} initialHelpful={note.helpful} />
             </Card>
           ))}
         </div>

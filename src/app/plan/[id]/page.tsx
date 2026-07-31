@@ -57,7 +57,9 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
         )}
       </div>
 
-      {activeCoachNote && <CoachNoteBanner id={activeCoachNote.id} message={activeCoachNote.message} />}
+      {activeCoachNote && (
+        <CoachNoteBanner id={activeCoachNote.id} message={activeCoachNote.message} helpful={activeCoachNote.helpful} />
+      )}
 
       <PlanViewSwitcher weeks={weeks} />
     </div>

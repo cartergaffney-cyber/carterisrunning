@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { deriveTrainingPaces, DISTANCE_MILES } from "@/lib/plan-generator";
 import { describeWorkout } from "@/lib/plan-generator/workout-builder";
+import { shouldPreferConciseVariant } from "@/lib/coaching/note-feedback";
 import { today } from "@/lib/utils/date";
 import { formatDuration, formatPaceSecondsPerMile } from "@/lib/utils/pace";
 import type { RaceDistance, TrainingPaces, WorkoutType } from "@/lib/plan-generator/types";
@@ -21,17 +22,28 @@ const PACE_FIELD_BY_WORKOUT_TYPE: Partial<Record<WorkoutType, keyof TrainingPace
   BACK_TO_BACK_LONG: "longRunPaceSecondsPerMile",
 };
 
-function buildGoalUpdateMessage(goalTimeSeconds: number | null, paces: TrainingPaces | null): string {
+/**
+ * `concise` is driven by thumbs-down feedback on past GOAL_UPDATED notes
+ * (see note-feedback.ts) -- once a user (or the user base overall) has
+ * voted a majority of these unhelpful, drop the explanatory clause and
+ * just state the fact.
+ */
+function buildGoalUpdateMessage(goalTimeSeconds: number | null, paces: TrainingPaces | null, concise: boolean): string {
   if (!goalTimeSeconds) {
-    return "Goal time cleared. Training paces will be based on your recent Strava fitness instead of a fixed target.";
+    return concise
+      ? "Goal time cleared."
+      : "Goal time cleared. Training paces will be based on your recent Strava fitness instead of a fixed target.";
   }
   const formatted = formatDuration(goalTimeSeconds);
   if (!paces) {
-    return `Goal time updated to ${formatted}. Training paces couldn't be calculated yet -- sync more runs so there's enough fitness data.`;
+    return concise
+      ? `Goal time updated to ${formatted}.`
+      : `Goal time updated to ${formatted}. Training paces couldn't be calculated yet -- sync more runs so there's enough fitness data.`;
   }
-  return `Goal time updated to ${formatted} (race pace ${formatPaceSecondsPerMile(
-    paces.racePaceSecondsPerMile
-  )}). Training paces have been recalculated across your remaining workouts.`;
+  const racePace = formatPaceSecondsPerMile(paces.racePaceSecondsPerMile);
+  return concise
+    ? `Goal time updated to ${formatted} (race pace ${racePace}).`
+    : `Goal time updated to ${formatted} (race pace ${racePace}). Training paces have been recalculated across your remaining workouts.`;
 }
 
 /**
@@ -114,12 +126,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
   });
 
+  const concise = await shouldPreferConciseVariant(user.id, "GOAL_UPDATED");
+
   await prisma.coachNote.create({
     data: {
       userId: user.id,
       trainingPlanId: plan.id,
       kind: "GOAL_UPDATED",
-      message: buildGoalUpdateMessage(goalTimeSeconds, newPaces),
+      message: buildGoalUpdateMessage(goalTimeSeconds, newPaces, concise),
     },
   });
 
