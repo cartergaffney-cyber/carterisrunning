@@ -1,41 +1,42 @@
 import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 
 export default async function HomePage() {
   const user = await getCurrentUser();
-  if (user) {
-    redirect("/dashboard");
-  }
 
   return (
     <div className="flex flex-1 flex-col">
-      <nav className="flex items-center justify-between gap-6 border-b border-border px-6 py-4 sm:px-10">
-        <div className="flex items-center gap-2">
-          <Image src="/branding/carter-is-running-icon.svg" alt="" width={24} height={24} className="rounded-md" />
-          <span className="text-sm font-semibold tracking-tight">Carter Is Running</span>
-        </div>
-        <div className="hidden items-center gap-8 sm:flex">
-          <a href="#features" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-            Features
-          </a>
-          <a href="#how-it-works" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-            How it works
-          </a>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/login" className="text-sm font-medium text-foreground transition-colors hover:text-muted-foreground">
-            Log in
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
-          >
-            Get started
-          </Link>
-        </div>
-      </nav>
+      {!user && (
+        <nav className="flex items-center justify-between gap-6 border-b border-border px-6 py-4 sm:px-10">
+          <div className="flex items-center gap-2">
+            <Image src="/branding/carter-is-running-icon.svg" alt="" width={24} height={24} className="rounded-md" />
+            <span className="text-sm font-semibold tracking-tight">Carter Is Running</span>
+          </div>
+          <div className="hidden items-center gap-8 sm:flex">
+            <a href="#features" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              Features
+            </a>
+            <a href="#how-it-works" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              How it works
+            </a>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/login"
+              className="text-sm font-medium text-foreground transition-colors hover:text-muted-foreground"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
+            >
+              Get started
+            </Link>
+          </div>
+        </nav>
+      )}
 
       <section className="flex flex-col items-center gap-6 px-6 py-20 text-center sm:py-28">
         <div className="relative h-56 w-full max-w-2xl overflow-hidden rounded-3xl shadow-sm sm:h-72">
@@ -53,10 +54,10 @@ export default async function HomePage() {
           Running informed by AI and powered by community.
         </p>
         <Link
-          href="/login"
+          href={user ? "/dashboard" : "/login"}
           className="mt-2 flex h-12 items-center justify-center rounded-full bg-accent px-7 text-base font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover"
         >
-          Get started
+          {user ? "Go to dashboard" : "Get started"}
         </Link>
         <div className="flex gap-6 text-sm font-medium">
           <a href="#how-it-works" className="underline-offset-4 hover:underline">

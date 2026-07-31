@@ -1,25 +1,6 @@
 import { WorkoutCard } from "./WorkoutCard";
 import { Badge } from "@/components/ui/Badge";
-
-interface WorkoutData {
-  id: string;
-  date: Date;
-  workoutType: string;
-  description: string;
-  completed: boolean;
-  targetDistanceMiles: number | null;
-  runId: string | null;
-  clubSuggestionReason: string | null;
-  routeStatus: string | null;
-  routeFileName: string | null;
-}
-
-interface WeekData {
-  weekNumber: number;
-  phase: string;
-  isStepBack: boolean;
-  workouts: WorkoutData[];
-}
+import type { WeekData } from "./types";
 
 const PHASE_LABELS: Record<string, string> = {
   BASE: "Base",
@@ -43,18 +24,7 @@ export function PlanListView({ weeks }: { weeks: WeekData[] }) {
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {week.workouts.map((workout) => (
-                <WorkoutCard
-                  key={workout.id}
-                  id={workout.id}
-                  date={workout.date}
-                  workoutType={workout.workoutType}
-                  description={workout.description}
-                  completed={workout.completed}
-                  runId={workout.runId}
-                  clubSuggestionReason={workout.clubSuggestionReason}
-                  routeStatus={workout.routeStatus}
-                  routeFileName={workout.routeFileName}
-                />
+                <WorkoutCard key={workout.id} {...workout} />
               ))}
             </div>
           </section>

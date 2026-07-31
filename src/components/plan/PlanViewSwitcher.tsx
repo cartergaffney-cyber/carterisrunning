@@ -3,26 +3,7 @@
 import { useState } from "react";
 import { PlanListView } from "./PlanListView";
 import { PlanCalendarView } from "./PlanCalendarView";
-
-interface WorkoutData {
-  id: string;
-  date: Date;
-  workoutType: string;
-  description: string;
-  completed: boolean;
-  targetDistanceMiles: number | null;
-  runId: string | null;
-  clubSuggestionReason: string | null;
-  routeStatus: string | null;
-  routeFileName: string | null;
-}
-
-interface WeekData {
-  weekNumber: number;
-  phase: string;
-  isStepBack: boolean;
-  workouts: WorkoutData[];
-}
+import type { WeekData } from "./types";
 
 export function PlanViewSwitcher({ weeks }: { weeks: WeekData[] }) {
   const [view, setView] = useState<"list" | "calendar">("list");

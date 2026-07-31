@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { parseStravaLocalDate, StravaSummaryActivity } from "./client";
+import { runCoachingPipeline } from "@/lib/coaching/on-link";
 import type { Prisma } from "@/generated/prisma/client";
 
 const METERS_TO_MILES = 1 / 1609.34;
@@ -29,6 +30,7 @@ export function mapActivityToRun(
     avgPaceSecondsPerMile: distanceMiles > 0 ? Math.round(durationSeconds / distanceMiles) : 0,
     elevationGainFeet: activity.total_elevation_gain * METERS_TO_FEET,
     sufferScore: activity.suffer_score ?? null,
+    avgHeartRate: activity.average_heartrate != null ? Math.round(activity.average_heartrate) : null,
   };
 }
 
@@ -71,9 +73,9 @@ export async function upsertRuns(
 
 function isSameCalendarDay(a: Date, b: Date): boolean {
   return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
+    a.getUTCFullYear() === b.getUTCFullYear() &&
+    a.getUTCMonth() === b.getUTCMonth() &&
+    a.getUTCDate() === b.getUTCDate()
   );
 }
 
@@ -115,6 +117,7 @@ export async function autoLinkRuns(userId: string, runIds: string[]): Promise<Au
         prisma.run.update({ where: { id: run.id }, data: { plannedWorkoutId: workout.id } }),
         prisma.plannedWorkout.update({ where: { id: workout.id }, data: { completed: true } }),
       ]);
+      await runCoachingPipeline(run.id, workout.id);
       linkedCount++;
       // Remove the matched workout from further consideration this sync.
       const index = unlinkedWorkouts.indexOf(workout);

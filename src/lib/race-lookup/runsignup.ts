@@ -1,15 +1,9 @@
+import { today } from "@/lib/utils/date";
+import { parseDistanceToMeters, parseRunSignupDateTime, type RunSignupAddress } from "./runsignup-shared";
 import type { RaceLookupQuery, RaceLookupResult } from "./types";
 
 const RUNSIGNUP_BASE = "https://runsignup.com/Rest";
 const MAX_RACE_CANDIDATES = 4; // races to fetch event detail for, per search
-
-interface RunSignupAddress {
-  street?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zipcode?: string | null;
-  country_code?: string | null;
-}
 
 interface RunSignupSearchRace {
   race_id: number;
@@ -40,28 +34,6 @@ interface RunSignupRaceDetail {
 
 interface RunSignupRaceDetailResponse {
   race?: RunSignupRaceDetail;
-}
-
-/** Parses distance strings like "26.2 Miles", "50 Kilometers", "5K" into meters. */
-function parseDistanceToMeters(distance: string): number | null {
-  const match = distance.match(/([\d.]+)\s*(miles?|mi\b|kilometers?|km\b|k\b)/i);
-  if (!match) return null;
-
-  const value = parseFloat(match[1]);
-  const unit = match[2].toLowerCase();
-
-  if (unit.startsWith("mi")) return value * 1609.34;
-  if (unit.startsWith("km") || unit === "k") return value * 1000;
-  return null;
-}
-
-/** Parses RunSignup's "M/D/YYYY HH:mm" wall-clock format as a local Date, not UTC. */
-function parseRunSignupDateTime(value: string): Date | null {
-  const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
-  if (!match) return null;
-
-  const [, month, day, year, hour, minute] = match;
-  return new Date(Number(year), Number(month) - 1, Number(day), Number(hour ?? 0), Number(minute ?? 0));
 }
 
 async function fetchRaceDetail(raceId: number): Promise<RunSignupRaceDetail | null> {
@@ -118,12 +90,23 @@ export async function searchRunSignupRaces(query: RaceLookupQuery): Promise<Race
       return;
     }
 
+    // RunSignup's event list includes every historical year the race has
+    // run, not just the upcoming one -- a race with a decade of history can
+    // return dozens of past-year "events" here. Only surface events that
+    // haven't happened yet; a race with no upcoming events left (or an
+    // unparseable date) is skipped as a distance option, since a start
+    // date the app can't verify as still upcoming isn't a usable target.
+    const now = today();
+
     for (const event of events) {
+      const eventDate = event.start_time ? parseRunSignupDateTime(event.start_time) : null;
+      if (!eventDate || eventDate < now) continue;
+
       results.push({
         source: "RUNSIGNUP",
         externalId: `${detail.race_id}:${event.event_id}`,
         name: `${detail.name} — ${event.name}`,
-        raceDate: event.start_time ? parseRunSignupDateTime(event.start_time) : null,
+        raceDate: eventDate,
         city: address?.city ?? undefined,
         state: address?.state ?? undefined,
         country: address?.country_code ?? undefined,

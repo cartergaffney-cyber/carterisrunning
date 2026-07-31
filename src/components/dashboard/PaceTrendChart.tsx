@@ -5,7 +5,7 @@ import type { PaceTrendPoint } from "@/lib/stats/aggregate";
 import { formatPaceSecondsPerMile } from "@/lib/utils/pace";
 
 function formatWeekLabel(date: Date): string {
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
 function ChartTooltip({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -18,6 +18,21 @@ interface RaceCandidate {
   elevationGainMeters: number | null;
   sourceUrl?: string;
   suggestedRaceDistance: string | null;
+  raw?: { snippet?: string };
+}
+
+interface CatalogSuggestion {
+  id: string;
+  name: string;
+  commonName: string | null;
+  raceDate: string | null; // ISO
+  city: string | null;
+  state: string | null;
+  distanceMeters: number | null;
+  logoUrl: string | null;
+  description: string | null;
+  source: string;
+  suggestedRaceDistance: string | null;
 }
 
 interface ConfirmedRace {
@@ -28,13 +43,34 @@ interface ConfirmedRace {
 
 const METERS_TO_MILES = 1 / 1609.34;
 const METERS_TO_FEET = 3.28084;
+const INITIAL_OTHER_RESULTS_SHOWN = 5;
+const TYPEAHEAD_DEBOUNCE_MS = 200;
+const MIN_TYPEAHEAD_LENGTH = 2;
 
 function toDateInputValue(iso: string | null): string {
   return iso ? iso.slice(0, 10) : "";
 }
 
+function hostname(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
 export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: ConfirmedRace) => void }) {
-  const [expanded, setExpanded] = useState(false);
+  // Typeahead against the local Race catalog -- the primary flow now.
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<CatalogSuggestion[]>([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [typeaheadLoading, setTypeaheadLoading] = useState(false);
+  const requestIdRef = useRef(0);
+
+  // Live web-search lookup -- demoted to a secondary "can't find it" escape
+  // hatch, gated behind `showLiveSearch`. Logic below is unchanged from
+  // before this component grew a typeahead.
+  const [showLiveSearch, setShowLiveSearch] = useState(false);
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -42,6 +78,8 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
   const [results, setResults] = useState<RaceCandidate[] | null>(null);
   const [selected, setSelected] = useState<RaceCandidate | null>(null);
   const [showConfirmForm, setShowConfirmForm] = useState(false);
+  const [showAllOthers, setShowAllOthers] = useState(false);
+
   const [confirmedSummary, setConfirmedSummary] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,11 +93,59 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
     elevationGainFeet: "",
   });
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < MIN_TYPEAHEAD_LENGTH) {
+      setSuggestions([]);
+      setSuggestionsOpen(false);
+      return;
+    }
+
+    const requestId = ++requestIdRef.current;
+    const timer = setTimeout(async () => {
+      setTypeaheadLoading(true);
+      try {
+        const response = await fetch(`/api/races/autocomplete?q=${encodeURIComponent(trimmed)}`);
+        if (!response.ok) return;
+        const { results } = await response.json();
+        if (requestId !== requestIdRef.current) return; // a newer keystroke already superseded this
+        setSuggestions(results);
+        setSuggestionsOpen(true);
+      } finally {
+        if (requestId === requestIdRef.current) setTypeaheadLoading(false);
+      }
+    }, TYPEAHEAD_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  function selectCatalogRace(race: CatalogSuggestion) {
+    // Catalog rows are already-vetted (curated by hand, or synced from
+    // RunSignup with a real external ID), so unlike the live-search path
+    // below this skips the confirm form and POST /api/races entirely --
+    // reusing the existing row is exactly what lets two plans for the same
+    // real-world race share one Race.id later.
+    setSuggestionsOpen(false);
+    setConfirmedSummary(
+      `${race.commonName ?? race.name}${race.raceDate ? ` — ${toDateInputValue(race.raceDate)}` : ""}`
+    );
+    onConfirmed({
+      raceId: race.id,
+      raceDistance: race.suggestedRaceDistance,
+      raceDate: race.raceDate ? toDateInputValue(race.raceDate) : null,
+    });
+  }
+
+  async function handleSearch() {
+    if (!name.trim()) {
+      setError("Enter a race name to search.");
+      return;
+    }
+
     setSearching(true);
     setError(null);
     setResults(null);
+    setShowAllOthers(false);
 
     try {
       const response = await fetch("/api/races/search", {
@@ -144,142 +230,283 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
     }
   }
 
+  function reset() {
+    setConfirmedSummary(null);
+    setSelected(null);
+    setResults(null);
+    setShowConfirmForm(false);
+    setShowLiveSearch(false);
+    setQuery("");
+    setSuggestions([]);
+    setSuggestionsOpen(false);
+  }
+
+  const webResults = results?.filter((r) => r.source === "WEB_SEARCH") ?? [];
+  const otherResults = results?.filter((r) => r.source !== "WEB_SEARCH") ?? [];
+
   if (confirmedSummary) {
     return (
       <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-3 text-sm">
         <span className="text-xs font-medium text-muted-foreground">Race</span>
         <span>{confirmedSummary}</span>
-        <button
-          type="button"
-          onClick={() => {
-            setConfirmedSummary(null);
-            setSelected(null);
-            setResults(null);
-            setShowConfirmForm(false);
-          }}
-          className="w-fit text-xs text-muted-foreground underline"
-        >
+        <button type="button" onClick={reset} className="w-fit text-xs text-muted-foreground underline">
           Change
         </button>
       </div>
     );
   }
 
-  if (!expanded) {
-    return (
-      <Button type="button" variant="secondary" onClick={() => setExpanded(true)} className="w-fit">
-        Look up a race by name
-      </Button>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
-      <form onSubmit={handleSearch} className="flex flex-col gap-2">
-        <div className="flex gap-2">
-          <Input
-            type="text"
-            placeholder="Race name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="flex-1"
-          />
-          <Input
-            type="text"
-            placeholder="City (optional)"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            className="w-32"
-          />
-          <Input
-            type="text"
-            placeholder="State (optional)"
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-            className="w-24"
-          />
-        </div>
-        <Button type="submit" variant="secondary" disabled={searching} className="w-fit">
-          {searching ? "Searching…" : "Search"}
-        </Button>
-      </form>
+      {/*
+        A plain div, not a <form> -- this component is used inside
+        PlanSetupWizard's own outer <form>, and nested <form> elements are
+        invalid HTML. Browsers "fix" that by collapsing/merging the two,
+        which made clicking Search actually submit the outer wizard form
+        instead of running this search.
+      */}
+      <div className="relative flex flex-col gap-1">
+        <label className="text-xs font-medium text-muted-foreground">Find your race</label>
+        <Input
+          type="text"
+          placeholder="Start typing a race name…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => suggestions.length > 0 && setSuggestionsOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.preventDefault();
+            if (e.key === "Escape") setSuggestionsOpen(false);
+          }}
+        />
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {suggestionsOpen && (
+          <div className="absolute top-full z-10 mt-1 flex w-full flex-col overflow-hidden rounded-md border border-border bg-surface shadow-lg">
+            {typeaheadLoading && suggestions.length === 0 && (
+              <div className="p-3 text-sm text-muted-foreground">Searching…</div>
+            )}
+            {!typeaheadLoading && suggestions.length === 0 && (
+              <div className="p-3 text-sm text-muted-foreground">
+                No matches yet — keep typing, or search the web below.
+              </div>
+            )}
+            {suggestions.map((race) => (
+              <button
+                key={race.id}
+                type="button"
+                onClick={() => selectCatalogRace(race)}
+                className="flex items-center gap-2 border-b border-border p-2 text-left text-sm last:border-b-0 hover:bg-accent/10"
+              >
+                {race.logoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={race.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded object-contain" />
+                )}
+                <div className="flex flex-1 flex-col">
+                  <span className="font-medium">{race.commonName ?? race.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {race.raceDate
+                      ? new Date(race.raceDate).toLocaleDateString(undefined, { timeZone: "UTC" })
+                      : "date unknown"}
+                    {race.city ? ` · ${race.city}, ${race.state ?? ""}` : ""}
+                    {race.distanceMeters ? ` · ${(race.distanceMeters * METERS_TO_MILES).toFixed(1)} mi` : ""}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {results && !showConfirmForm && (
-        <div className="flex flex-col gap-2">
-          {results.length === 0 && (
-            <p className="text-sm text-muted-foreground">No results found. You can enter the details manually.</p>
-          )}
-          {results.map((candidate, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => selectCandidate(candidate)}
-              className="flex flex-col items-start gap-0.5 rounded-md border border-border p-2 text-left text-sm transition-colors hover:border-accent"
-            >
-              <span className="font-medium">{candidate.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {candidate.raceDate ? new Date(candidate.raceDate).toLocaleDateString() : "date unknown"}
-                {candidate.city ? ` · ${candidate.city}, ${candidate.state ?? ""}` : ""}
-                {candidate.distanceMeters
-                  ? ` · ${(candidate.distanceMeters * METERS_TO_MILES).toFixed(1)} mi`
-                  : ""}
-                {` · ${candidate.source}`}
-              </span>
-            </button>
-          ))}
-          <button type="button" onClick={selectManual} className="w-fit text-sm text-muted-foreground underline">
-            None of these — enter manually
-          </button>
-        </div>
+      {!showLiveSearch && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowLiveSearch(true);
+            setName(query);
+            setSuggestionsOpen(false);
+          }}
+          className="w-fit text-xs text-muted-foreground underline"
+        >
+          Can&rsquo;t find it? Search the web
+        </button>
       )}
 
-      {showConfirmForm && (
-        <div className="flex flex-col gap-2 border-t border-border pt-3">
-          <p className="text-sm font-medium">Confirm race details</p>
-          <Input
-            type="text"
-            placeholder="Race name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <div className="flex gap-2">
-            <Input type="date" value={form.raceDate} onChange={(e) => setForm({ ...form, raceDate: e.target.value })} />
-            <Input
-              type="text"
-              placeholder="City"
-              value={form.city}
-              onChange={(e) => setForm({ ...form, city: e.target.value })}
-              className="w-28"
-            />
-            <Input
-              type="text"
-              placeholder="State"
-              value={form.state}
-              onChange={(e) => setForm({ ...form, state: e.target.value })}
-              className="w-20"
-            />
+      {showLiveSearch && (
+        <div className="flex flex-col gap-3 border-t border-border pt-3">
+          <div
+            className="flex flex-col gap-2"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSearch();
+              }
+            }}
+          >
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Race name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="flex-1"
+              />
+              <Input
+                type="text"
+                placeholder="City (optional)"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-32"
+              />
+              <Input
+                type="text"
+                placeholder="State (optional)"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-24"
+              />
+            </div>
+            <Button type="button" onClick={handleSearch} variant="secondary" disabled={searching} className="w-fit">
+              {searching ? "Searching…" : "Search"}
+            </Button>
           </div>
-          <div className="flex gap-2">
-            <Select value={form.terrainType} onChange={(e) => setForm({ ...form, terrainType: e.target.value })}>
-              <option value="UNKNOWN">Terrain unknown</option>
-              <option value="ROAD">Road</option>
-              <option value="TRAIL">Trail</option>
-              <option value="MIXED">Mixed</option>
-            </Select>
-            <Input
-              type="number"
-              placeholder="Elevation gain (ft)"
-              value={form.elevationGainFeet}
-              onChange={(e) => setForm({ ...form, elevationGainFeet: e.target.value })}
-              className="flex-1"
-            />
-          </div>
-          <Button type="button" onClick={handleConfirm} disabled={submitting || !form.name} className="w-fit">
-            {submitting ? "Saving…" : "Confirm race"}
-          </Button>
+
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+          {results && !showConfirmForm && (
+            <div className="flex flex-col gap-3">
+              {results.length === 0 && (
+                <p className="text-sm text-muted-foreground">No results found. You can enter the details manually.</p>
+              )}
+
+              {webResults.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    From the web
+                  </span>
+                  {webResults.map((candidate, i) => (
+                    <button
+                      key={`web-${i}`}
+                      type="button"
+                      onClick={() => selectCandidate(candidate)}
+                      className="flex flex-col items-start gap-1 rounded-md border border-accent/40 bg-accent/5 p-3 text-left text-sm transition-colors hover:border-accent"
+                    >
+                      <span className="font-medium">{candidate.name}</span>
+                      {candidate.sourceUrl && (
+                        <span className="text-xs text-accent">{hostname(candidate.sourceUrl)}</span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {candidate.city ? `${candidate.city}, ${candidate.state ?? ""}` : ""}
+                        {candidate.distanceMeters
+                          ? ` · ${(candidate.distanceMeters * METERS_TO_MILES).toFixed(1)} mi`
+                          : ""}
+                      </span>
+                      {candidate.raw?.snippet && (
+                        <span className="text-xs text-muted-foreground italic">
+                          &ldquo;{candidate.raw.snippet}&rdquo;
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        Race date isn&rsquo;t guessed automatically (the snippet above may show it) — confirm it
+                        below.
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {otherResults.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Other matches on RunSignup
+                  </span>
+                  {(showAllOthers ? otherResults : otherResults.slice(0, INITIAL_OTHER_RESULTS_SHOWN)).map(
+                    (candidate, i) => (
+                      <button
+                        key={`other-${i}`}
+                        type="button"
+                        onClick={() => selectCandidate(candidate)}
+                        className="flex flex-col items-start gap-0.5 rounded-md border border-border p-2 text-left text-sm transition-colors hover:border-accent"
+                      >
+                        <span className="font-medium">{candidate.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {candidate.raceDate
+                            ? new Date(candidate.raceDate).toLocaleDateString(undefined, { timeZone: "UTC" })
+                            : "date unknown"}
+                          {candidate.city ? ` · ${candidate.city}, ${candidate.state ?? ""}` : ""}
+                          {candidate.distanceMeters
+                            ? ` · ${(candidate.distanceMeters * METERS_TO_MILES).toFixed(1)} mi`
+                            : ""}
+                        </span>
+                      </button>
+                    )
+                  )}
+                  {!showAllOthers && otherResults.length > INITIAL_OTHER_RESULTS_SHOWN && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllOthers(true)}
+                      className="w-fit text-xs font-medium text-accent underline"
+                    >
+                      Show {otherResults.length - INITIAL_OTHER_RESULTS_SHOWN} more
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <button type="button" onClick={selectManual} className="w-fit text-sm text-muted-foreground underline">
+                None of these — enter manually
+              </button>
+            </div>
+          )}
+
+          {showConfirmForm && (
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <p className="text-sm font-medium">Confirm race details</p>
+              <Input
+                type="text"
+                placeholder="Race name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={form.raceDate}
+                  onChange={(e) => setForm({ ...form, raceDate: e.target.value })}
+                />
+                <Input
+                  type="text"
+                  placeholder="City"
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  className="w-28"
+                />
+                <Input
+                  type="text"
+                  placeholder="State"
+                  value={form.state}
+                  onChange={(e) => setForm({ ...form, state: e.target.value })}
+                  className="w-20"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={form.terrainType} onChange={(e) => setForm({ ...form, terrainType: e.target.value })}>
+                  <option value="UNKNOWN">Terrain unknown</option>
+                  <option value="ROAD">Road</option>
+                  <option value="TRAIL">Trail</option>
+                  <option value="MIXED">Mixed</option>
+                </Select>
+                <Input
+                  type="number"
+                  placeholder="Elevation gain (ft)"
+                  value={form.elevationGainFeet}
+                  onChange={(e) => setForm({ ...form, elevationGainFeet: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+              <Button type="button" onClick={handleConfirm} disabled={submitting || !form.name} className="w-fit">
+                {submitting ? "Saving…" : "Confirm race"}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

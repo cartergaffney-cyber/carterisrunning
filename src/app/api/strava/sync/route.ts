@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { getValidAccessToken, fetchActivities } from "@/lib/strava/client";
 import { upsertRuns, autoLinkRuns } from "@/lib/strava/sync";
+import { checkAndRecalibratePlan } from "@/lib/coaching/recalibrate-plan";
 import { addDays } from "@/lib/utils/date";
 
 export async function POST() {
@@ -19,6 +20,7 @@ export async function POST() {
   const activities = await fetchActivities(accessToken, after);
   const { createdCount, updatedCount, upsertedRunIds } = await upsertRuns(user.id, activities);
   const { linkedCount } = await autoLinkRuns(user.id, upsertedRunIds);
+  await checkAndRecalibratePlan(user.id);
 
   await prisma.user.update({
     where: { id: user.id },

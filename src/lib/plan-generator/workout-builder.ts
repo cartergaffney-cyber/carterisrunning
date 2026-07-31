@@ -31,7 +31,7 @@ function milesToDurationMinutes(miles: number, longRunPaceSecondsPerMile?: numbe
   return Math.round((miles * paceMinPerMile) / 5) * 5;
 }
 
-function describeWorkout(
+export function describeWorkout(
   workoutType: WorkoutType,
   distanceMiles: number | undefined,
   durationMinutes: number | undefined,

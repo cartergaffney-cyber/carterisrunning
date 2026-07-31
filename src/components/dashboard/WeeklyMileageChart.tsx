@@ -13,7 +13,7 @@ import {
 import type { WeeklyMileagePoint } from "@/lib/stats/aggregate";
 
 function formatWeekLabel(date: Date): string {
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
 interface TooltipPayloadEntry {

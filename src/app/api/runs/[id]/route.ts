@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
+import { runCoachingPipeline } from "@/lib/coaching/on-link";
 
 const patchRunSchema = z.object({
   plannedWorkoutId: z.string().nullable(),
@@ -84,6 +85,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       );
     }
     throw error;
+  }
+
+  if (plannedWorkoutId) {
+    await runCoachingPipeline(id, plannedWorkoutId);
   }
 
   const updated = await prisma.run.findUniqueOrThrow({ where: { id } });

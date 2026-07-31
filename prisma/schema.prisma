@@ -50,6 +50,7 @@ enum RaceSource {
   RUNSIGNUP
   WEB_SEARCH
   MANUAL
+  CURATED
 }
 
 enum TerrainType {
@@ -130,6 +131,7 @@ model User {
   runs             Run[]
   fitnessSnapshots FitnessSnapshot[]
   clubs            Club[]
+  coachNotes       CoachNote[]
 }
 
 model TrainingPlan {
@@ -153,10 +155,12 @@ model TrainingPlan {
   racePaceSecondsPerMile    Int?
   totalWeeks                Int
   status                    PlanStatus       @default(ACTIVE)
+  lastRecalibratedAt        DateTime?
   createdAt                 DateTime         @default(now())
   updatedAt                 DateTime         @updatedAt
 
   plannedWorkouts PlannedWorkout[]
+  coachNotes      CoachNote[]
 
   @@index([userId, status])
 }
@@ -186,6 +190,7 @@ model FitnessSnapshot {
 model Race {
   id                  String      @id @default(cuid())
   name                String
+  commonName          String?
   source              RaceSource
   externalId          String?
   raceDate            DateTime?
@@ -198,12 +203,24 @@ model Race {
   elevationGainMeters Float?
   courseUrl           String?
   sourceUrl           String?
+  websiteUrl          String?
+  registrationUrl     String?
+  logoUrl             String?
+  slogan              String?
+  description         String?
+  participantCount    Int?
   raw                 String?
   confirmedByUser     Boolean     @default(false)
+  lastSyncedAt        DateTime?
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
   trainingPlans TrainingPlan[]
+
+  @@unique([source, externalId])
+  @@index([raceDate])
+  @@index([name])
+  @@index([commonName])
 }
 
 model PlannedWorkout {
@@ -220,6 +237,7 @@ model PlannedWorkout {
   targetPaceSecondsPerMile Int?
   description              String
   completed                Boolean       @default(false)
+  adaptationReason        String?
 
   run            Run?
   clubSuggestion ClubSuggestion?
@@ -314,12 +332,28 @@ model Run {
   distanceMiles         Float
   durationSeconds       Int
   avgPaceSecondsPerMile Int
+  avgHeartRate          Int?
   elevationGainFeet     Float?
   sufferScore           Int?
   perceivedExertion     Int?
   notes                 String?
+  coachCommentary       String?
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
   @@index([userId, date])
+}
+
+model CoachNote {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  trainingPlanId String?
+  trainingPlan   TrainingPlan? @relation(fields: [trainingPlanId], references: [id])
+  kind           String
+  message        String
+  createdAt      DateTime      @default(now())
+  dismissedAt    DateTime?
+
+  @@index([userId, dismissedAt])
 }

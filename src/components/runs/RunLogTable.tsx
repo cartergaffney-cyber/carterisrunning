@@ -42,7 +42,12 @@ export function RunLogTable({ runs }: { runs: RunRow[] }) {
             <tr key={run.id} className="border-b border-border last:border-0 hover:bg-surface-muted">
               <td className="px-4 py-3">
                 <Link href={`/runs/${run.id}`} className="hover:underline">
-                  {run.date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                  {run.date.toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  })}
                 </Link>
               </td>
               <td className="px-4 py-3">{run.name ?? "—"}</td>

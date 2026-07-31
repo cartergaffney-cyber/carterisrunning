@@ -17,15 +17,22 @@ export interface StravaSummaryActivity {
   start_date: string; // ISO 8601, UTC
   start_date_local: string; // ISO 8601 wall-clock time in the athlete's local zone, mislabeled with a "Z" suffix
   suffer_score?: number | null;
+  average_heartrate?: number | null;
 }
 
 /**
  * Strava's `start_date_local` is the athlete's local wall-clock time but
  * serialized with a "Z" (UTC) suffix, so `new Date(...)` on it would
- * silently reinterpret those digits through the server's own timezone.
- * This reads the literal Y/M/D/H/M/S digits and builds a local Date from
- * them directly, so the run lands on the athlete's actual calendar day
- * regardless of what timezone the server happens to run in.
+ * silently reinterpret those digits through the server's own timezone. This
+ * reads the literal Y/M/D/H/M/S digits and builds a Date anchored to UTC
+ * from them directly (`Date.UTC`, not the ambient-local constructor), so the
+ * run lands on the athlete's actual calendar day regardless of what
+ * timezone the server happens to run in -- using the local constructor here
+ * would encode the athlete's wall-clock digits as ambient-local time on
+ * whichever machine runs this code, which silently shifts a calendar day
+ * when read back on a machine in a different timezone (see date.ts's
+ * module docstring for the full explanation of why this app anchors all
+ * calendar dates to UTC).
  */
 export function parseStravaLocalDate(startDateLocal: string): Date {
   const match = startDateLocal.match(
@@ -35,7 +42,7 @@ export function parseStravaLocalDate(startDateLocal: string): Date {
     throw new Error(`Unrecognized Strava start_date_local format: ${startDateLocal}`);
   }
   const [year, month, day, hour, minute, second] = match.slice(1).map(Number);
-  return new Date(year, month - 1, day, hour, minute, second);
+  return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
 }
 
 export async function getValidAccessToken(user: User): Promise<string> {

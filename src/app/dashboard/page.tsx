@@ -5,6 +5,8 @@ import Link from "next/link";
 import { DISTANCE_LABELS } from "@/lib/plan-generator";
 import type { RaceDistance } from "@/lib/plan-generator";
 import { StravaSyncButton } from "@/components/strava/StravaSyncButton";
+import { CoachNoteBanner } from "@/components/coaching/CoachNoteBanner";
+import { GoalEditor } from "@/components/dashboard/GoalEditor";
 import { StatTile } from "@/components/dashboard/StatTile";
 import { WeeklyMileageChart } from "@/components/dashboard/WeeklyMileageChart";
 import { PaceTrendChart } from "@/components/dashboard/PaceTrendChart";
@@ -33,6 +35,11 @@ export default async function DashboardPage() {
     where: { userId: user.id, status: "ACTIVE" },
     orderBy: { createdAt: "desc" },
     include: { plannedWorkouts: true },
+  });
+
+  const activeCoachNote = await prisma.coachNote.findFirst({
+    where: { userId: user.id, dismissedAt: null },
+    orderBy: { createdAt: "desc" },
   });
 
   const runs = await prisma.run.findMany({
@@ -64,22 +71,35 @@ export default async function DashboardPage() {
         </form>
       </div>
 
+      {activeCoachNote && <CoachNoteBanner id={activeCoachNote.id} message={activeCoachNote.message} />}
+
       <div className="flex flex-wrap items-center gap-3">
         <StravaSyncButton />
 
         {activePlan ? (
-          <Link
-            href={`/plan/${activePlan.id}`}
-            className="flex flex-1 min-w-64 max-w-sm flex-col gap-0.5 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent"
-          >
-            <span className="text-xs font-medium text-muted-foreground">Active plan</span>
-            <span className="text-lg font-semibold">
-              {DISTANCE_LABELS[activePlan.raceDistance as RaceDistance]}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              Race day {activePlan.raceDate.toLocaleDateString(undefined, { dateStyle: "long" })}
-            </span>
-          </Link>
+          <div className="flex flex-1 min-w-64 max-w-sm flex-col gap-3 rounded-xl border border-border bg-surface p-4">
+            <div className="flex items-start justify-between gap-2">
+              <Link href={`/plan/${activePlan.id}`} className="flex flex-col gap-0.5 hover:text-accent">
+                <span className="text-xs font-medium text-muted-foreground">Active plan</span>
+                <span className="text-lg font-semibold">
+                  {DISTANCE_LABELS[activePlan.raceDistance as RaceDistance]}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  Race day {activePlan.raceDate.toLocaleDateString(undefined, { dateStyle: "long", timeZone: "UTC" })}
+                </span>
+              </Link>
+              <Link href="/plan/new" className="text-xs font-medium text-muted-foreground underline hover:text-foreground">
+                Start a new plan
+              </Link>
+            </div>
+            <div className="border-t border-border pt-3">
+              <GoalEditor
+                planId={activePlan.id}
+                goalTimeSeconds={activePlan.goalTimeSeconds}
+                racePaceSecondsPerMile={activePlan.racePaceSecondsPerMile}
+              />
+            </div>
+          </div>
         ) : (
           <Link
             href="/plan/new"
@@ -104,7 +124,7 @@ export default async function DashboardPage() {
         <StatTile
           label="Days to race"
           value={daysToRace !== null ? String(daysToRace) : "—"}
-          subtitle={activePlan?.raceDate.toLocaleDateString(undefined, { dateStyle: "medium" })}
+          subtitle={activePlan?.raceDate.toLocaleDateString(undefined, { dateStyle: "medium", timeZone: "UTC" })}
         />
       </div>
 

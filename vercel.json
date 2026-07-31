@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/generate-routes",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/sync-races",
+      "schedule": "0 6 * * *"
     }
   ]
 }

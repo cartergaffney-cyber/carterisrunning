@@ -84,6 +84,7 @@ export function LinkWorkoutModal({ runId, currentPlannedWorkoutId, candidates }:
                 weekday: "short",
                 month: "short",
                 day: "numeric",
+                timeZone: "UTC",
               })}{" "}
               &middot; {candidate.workoutType}
               {candidate.linkedToOtherRun ? " (already linked)" : ""}
