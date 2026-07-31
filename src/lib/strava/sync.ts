@@ -84,23 +84,25 @@ export interface AutoLinkResult {
 }
 
 /**
- * Best-effort match of newly-synced runs to the user's active plan: for
- * each unlinked run, if exactly one non-rest planned workout on the active
- * plan falls on the same calendar day and doesn't already have a linked
- * run, link them and mark the workout completed. Ambiguous or missing
- * matches are left for manual linking on the run detail page.
+ * Best-effort match of newly-synced runs to the user's active plan(s): for
+ * each unlinked run, if exactly one non-rest planned workout across all
+ * active plans falls on the same calendar day and doesn't already have a
+ * linked run, link them and mark the workout completed. A user can have
+ * more than one active plan at once (plans are no longer auto-archived),
+ * so a same-day match on two different active plans is itself ambiguous
+ * and correctly left for manual linking, same as two workouts on one plan.
  */
 export async function autoLinkRuns(userId: string, runIds: string[]): Promise<AutoLinkResult> {
   if (runIds.length === 0) return { linkedCount: 0 };
 
-  const activePlan = await prisma.trainingPlan.findFirst({
+  const activePlans = await prisma.trainingPlan.findMany({
     where: { userId, status: "ACTIVE" },
     include: { plannedWorkouts: { where: { workoutType: { not: "REST" } } } },
   });
 
-  if (!activePlan) return { linkedCount: 0 };
+  if (activePlans.length === 0) return { linkedCount: 0 };
 
-  const unlinkedWorkouts = activePlan.plannedWorkouts.filter((w) => !w.completed);
+  const unlinkedWorkouts = activePlans.flatMap((plan) => plan.plannedWorkouts).filter((w) => !w.completed);
 
   const runs = await prisma.run.findMany({
     where: { id: { in: runIds }, plannedWorkoutId: null },

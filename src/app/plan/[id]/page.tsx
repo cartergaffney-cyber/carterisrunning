@@ -4,13 +4,9 @@ import { redirect, notFound } from "next/navigation";
 import { PlanViewSwitcher } from "@/components/plan/PlanViewSwitcher";
 import { CoachNoteBanner } from "@/components/coaching/CoachNoteBanner";
 import { DISTANCE_LABELS } from "@/lib/plan-generator";
-import type { RaceDistance, WorkoutType } from "@/lib/plan-generator";
-import { compareRunToWorkout } from "@/lib/coaching/compare-run";
-import { today } from "@/lib/utils/date";
+import type { RaceDistance } from "@/lib/plan-generator";
+import { buildWeeksFromPlan } from "@/lib/plan-view/build-weeks";
 import { formatDuration, formatPaceSecondsPerMile } from "@/lib/utils/pace";
-import type { WeekData, WorkoutData } from "@/components/plan/types";
-
-const UNGRADED_TYPES = new Set<string>(["REST", "CROSS_TRAIN"]);
 
 export default async function PlanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -40,56 +36,7 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
     orderBy: { createdAt: "desc" },
   });
 
-  const now = today();
-  const weeksByNumber = new Map<number, WeekData>();
-
-  for (const workout of plan.plannedWorkouts) {
-    const workoutType = workout.workoutType as WorkoutType;
-    const comparisonStatus = workout.run
-      ? (compareRunToWorkout(workout.run, {
-          workoutType,
-          targetDistanceMiles: workout.targetDistanceMiles,
-          targetDurationMinutes: workout.targetDurationMinutes,
-          targetPaceSecondsPerMile: workout.targetPaceSecondsPerMile,
-        })?.status ?? null)
-      : null;
-
-    const missed = !workout.completed && !UNGRADED_TYPES.has(workoutType) && workout.date.getTime() < now.getTime();
-
-    const workoutData: WorkoutData = {
-      id: workout.id,
-      date: workout.date,
-      workoutType: workout.workoutType,
-      description: workout.description,
-      completed: workout.completed,
-      missed,
-      targetDistanceMiles: workout.targetDistanceMiles,
-      runId: workout.run?.id ?? null,
-      actualDistanceMiles: workout.run?.distanceMiles ?? null,
-      actualDurationSeconds: workout.run?.durationSeconds ?? null,
-      actualPaceSecondsPerMile: workout.run?.avgPaceSecondsPerMile ?? null,
-      comparisonStatus,
-      coachCommentary: workout.run?.coachCommentary ?? null,
-      adaptationReason: workout.adaptationReason,
-      clubSuggestionReason: workout.clubSuggestion?.matchReason ?? null,
-      routeStatus: workout.generatedRoute?.status ?? null,
-      routeFileName: workout.generatedRoute?.fileName ?? null,
-    };
-
-    const existing = weeksByNumber.get(workout.weekNumber);
-    if (existing) {
-      existing.workouts.push(workoutData);
-    } else {
-      weeksByNumber.set(workout.weekNumber, {
-        weekNumber: workout.weekNumber,
-        phase: workout.phase,
-        isStepBack: workout.isStepBack,
-        workouts: [workoutData],
-      });
-    }
-  }
-
-  const weeks = Array.from(weeksByNumber.values()).sort((a, b) => a.weekNumber - b.weekNumber);
+  const weeks = buildWeeksFromPlan(plan.plannedWorkouts);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-8">

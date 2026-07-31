@@ -19,7 +19,7 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
     notFound();
   }
 
-  const activePlan = await prisma.trainingPlan.findFirst({
+  const activePlans = await prisma.trainingPlan.findMany({
     where: { userId: user.id, status: "ACTIVE" },
   });
 
@@ -31,10 +31,10 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
     linkedToOtherRun: boolean;
   }[] = [];
 
-  if (activePlan) {
+  if (activePlans.length > 0) {
     const nearbyWorkouts = await prisma.plannedWorkout.findMany({
       where: {
-        trainingPlanId: activePlan.id,
+        trainingPlanId: { in: activePlans.map((p) => p.id) },
         workoutType: { not: "REST" },
         date: { gte: addDays(run.date, -3), lte: addDays(run.date, 3) },
       },
@@ -69,7 +69,7 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
         )}
       </div>
 
-      {activePlan ? (
+      {activePlans.length > 0 ? (
         <LinkWorkoutModal runId={run.id} currentPlannedWorkoutId={run.plannedWorkoutId} candidates={candidates} />
       ) : (
         <p className="text-sm text-muted-foreground">No active training plan to link against.</p>

@@ -54,14 +54,19 @@ interface WindowStats {
 }
 
 /**
- * Entry point, called after a Strava sync. Cheap no-op when there's no
- * active plan, not enough recent graded data, or a recalibration already
- * happened recently.
+ * Entry point, called after a Strava sync. A user can have more than one
+ * active plan at once (plans are no longer auto-archived), so this checks
+ * each one independently -- recalibration is plan-scoped judgment, not
+ * something that should only ever apply to a single "the" active plan.
  */
 export async function checkAndRecalibratePlan(userId: string): Promise<void> {
-  const plan = await prisma.trainingPlan.findFirst({ where: { userId, status: "ACTIVE" } });
-  if (!plan) return;
+  const plans = await prisma.trainingPlan.findMany({ where: { userId, status: "ACTIVE" } });
+  for (const plan of plans) {
+    await checkAndRecalibrateSinglePlan(plan);
+  }
+}
 
+async function checkAndRecalibrateSinglePlan(plan: TrainingPlan): Promise<void> {
   const now = today();
 
   if (plan.lastRecalibratedAt && diffInDays(plan.lastRecalibratedAt, now) < MIN_DAYS_BETWEEN_RECALIBRATIONS) {

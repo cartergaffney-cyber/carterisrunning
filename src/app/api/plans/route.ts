@@ -64,32 +64,25 @@ export async function POST(request: NextRequest) {
     }))
   );
 
-  const plan = await prisma.$transaction(async (tx) => {
-    await tx.trainingPlan.updateMany({
-      where: { userId: user.id, status: "ACTIVE" },
-      data: { status: "ARCHIVED" },
-    });
-
-    return tx.trainingPlan.create({
-      data: {
-        userId: user.id,
-        raceId,
-        raceDistance,
-        raceDate: parseLocalDate(raceDate),
-        startDate: today(),
-        currentWeeklyMileageMiles,
-        goalTimeSeconds,
-        totalWeeks: generated.totalWeeks,
-        fitnessSnapshotId: fitnessSnapshotRow.id,
-        paceBasis: generated.paces?.paceBasis,
-        easyPaceSecondsPerMile: generated.paces?.easyPaceSecondsPerMile,
-        tempoPaceSecondsPerMile: generated.paces?.tempoPaceSecondsPerMile,
-        intervalPaceSecondsPerMile: generated.paces?.intervalPaceSecondsPerMile,
-        longRunPaceSecondsPerMile: generated.paces?.longRunPaceSecondsPerMile,
-        racePaceSecondsPerMile: generated.paces?.racePaceSecondsPerMile,
-        plannedWorkouts: { create: plannedWorkouts },
-      },
-    });
+  const plan = await prisma.trainingPlan.create({
+    data: {
+      userId: user.id,
+      raceId,
+      raceDistance,
+      raceDate: parseLocalDate(raceDate),
+      startDate: today(),
+      currentWeeklyMileageMiles,
+      goalTimeSeconds,
+      totalWeeks: generated.totalWeeks,
+      fitnessSnapshotId: fitnessSnapshotRow.id,
+      paceBasis: generated.paces?.paceBasis,
+      easyPaceSecondsPerMile: generated.paces?.easyPaceSecondsPerMile,
+      tempoPaceSecondsPerMile: generated.paces?.tempoPaceSecondsPerMile,
+      intervalPaceSecondsPerMile: generated.paces?.intervalPaceSecondsPerMile,
+      longRunPaceSecondsPerMile: generated.paces?.longRunPaceSecondsPerMile,
+      racePaceSecondsPerMile: generated.paces?.racePaceSecondsPerMile,
+      plannedWorkouts: { create: plannedWorkouts },
+    },
   });
 
   const matchedCount = await matchWorkoutsToClubSessions(plan.id);

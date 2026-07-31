@@ -7,14 +7,11 @@ export async function NavBar() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [unreadCount, activePlan] = await Promise.all([
-    prisma.coachNote.count({ where: { userId: user.id, dismissedAt: null } }),
-    prisma.trainingPlan.findFirst({ where: { userId: user.id, status: "ACTIVE" }, select: { id: true } }),
-  ]);
+  const unreadCount = await prisma.coachNote.count({ where: { userId: user.id, dismissedAt: null } });
 
   const navLinks = [
     { href: "/dashboard", label: "Dashboard" },
-    { href: activePlan ? `/plan/${activePlan.id}` : "/plan/new", label: "Plan" },
+    { href: "/plan", label: "Plans" },
     { href: "/runs", label: "Runs" },
     { href: "/clubs", label: "Clubs" },
     { href: "/messages", label: "Messages", badge: unreadCount },

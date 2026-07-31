@@ -37,6 +37,8 @@ export default async function DashboardPage() {
     include: { plannedWorkouts: true },
   });
 
+  const activePlanCount = await prisma.trainingPlan.count({ where: { userId: user.id, status: "ACTIVE" } });
+
   const activeCoachNote = await prisma.coachNote.findFirst({
     where: { userId: user.id, dismissedAt: null },
     orderBy: { createdAt: "desc" },
@@ -80,7 +82,9 @@ export default async function DashboardPage() {
           <div className="flex flex-1 min-w-64 max-w-sm flex-col gap-3 rounded-xl border border-border bg-surface p-4">
             <div className="flex items-start justify-between gap-2">
               <Link href={`/plan/${activePlan.id}`} className="flex flex-col gap-0.5 hover:text-accent">
-                <span className="text-xs font-medium text-muted-foreground">Active plan</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {activePlanCount > 1 ? "Most recent plan" : "Active plan"}
+                </span>
                 <span className="text-lg font-semibold">
                   {DISTANCE_LABELS[activePlan.raceDistance as RaceDistance]}
                 </span>
@@ -88,9 +92,16 @@ export default async function DashboardPage() {
                   Race day {activePlan.raceDate.toLocaleDateString(undefined, { dateStyle: "long", timeZone: "UTC" })}
                 </span>
               </Link>
-              <Link href="/plan/new" className="text-xs font-medium text-muted-foreground underline hover:text-foreground">
-                Start a new plan
-              </Link>
+              <div className="flex flex-col items-end gap-1">
+                {activePlanCount > 1 && (
+                  <Link href="/plan" className="text-xs font-medium text-accent underline">
+                    View all {activePlanCount} plans
+                  </Link>
+                )}
+                <Link href="/plan/new" className="text-xs font-medium text-muted-foreground underline hover:text-foreground">
+                  Start a new plan
+                </Link>
+              </div>
             </div>
             <div className="border-t border-border pt-3">
               <GoalEditor
