@@ -23,12 +23,13 @@ export interface FitnessSnapshotData {
 
 export async function computeFitnessSnapshot(
   userId: string,
-  windowWeeks = DEFAULT_WINDOW_WEEKS
+  windowWeeks = DEFAULT_WINDOW_WEEKS,
+  asOf: Date = today()
 ): Promise<FitnessSnapshotData> {
-  const windowStart = addDays(today(), -windowWeeks * 7);
+  const windowStart = addDays(asOf, -windowWeeks * 7);
 
   const runs = await prisma.run.findMany({
-    where: { userId, date: { gte: windowStart } },
+    where: { userId, date: { gte: windowStart, lte: asOf } },
     select: {
       date: true,
       distanceMiles: true,

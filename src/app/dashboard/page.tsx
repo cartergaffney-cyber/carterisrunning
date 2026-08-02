@@ -11,6 +11,7 @@ import { StatTile } from "@/components/dashboard/StatTile";
 import { WeeklyMileageChart } from "@/components/dashboard/WeeklyMileageChart";
 import { PaceTrendChart } from "@/components/dashboard/PaceTrendChart";
 import { AdherenceChart } from "@/components/dashboard/AdherenceChart";
+import { PerformancePredictor } from "@/components/dashboard/PerformancePredictor";
 import { Card } from "@/components/ui/Card";
 import {
   computeAdherenceSeries,
@@ -18,6 +19,7 @@ import {
   computePaceTrendSeries,
   computeWeeklyMileageSeries,
 } from "@/lib/stats/aggregate";
+import { computePerformancePredictions } from "@/lib/fitness-assessment/performance-predictor";
 import { addDays, diffInDays, today } from "@/lib/utils/date";
 
 const STATS_WEEKS_BACK = 12;
@@ -58,6 +60,8 @@ export default async function DashboardPage() {
 
   const thisWeek = weeklyMileageSeries[weeklyMileageSeries.length - 1];
   const daysToRace = activePlan ? diffInDays(today(), activePlan.raceDate) : null;
+
+  const performancePredictions = await computePerformancePredictions(user.id);
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 p-8">
@@ -140,6 +144,8 @@ export default async function DashboardPage() {
           subtitle={activePlan?.raceDate.toLocaleDateString(undefined, { dateStyle: "medium", timeZone: "UTC" })}
         />
       </div>
+
+      <PerformancePredictor predictions={performancePredictions} />
 
       <div className="flex flex-col gap-4">
         <Card className="flex flex-col gap-3">
