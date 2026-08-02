@@ -148,7 +148,7 @@ export function PlanSetupWizard() {
             type="number"
             min={1}
             max={300}
-            step={0.5}
+            step={0.1}
             required
             value={currentWeeklyMileageMiles}
             onChange={(e) => {

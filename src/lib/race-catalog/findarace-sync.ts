@@ -202,6 +202,68 @@ function parseEventJsonLd(html: string): FindARaceEvent | null {
   return null;
 }
 
+type UpsertOutcome = "added" | "skipped_duplicate" | "skipped_stale_or_invalid" | "skipped_unfetchable";
+
+/** Fetches one findarace event page and upserts it if it parses as a real, upcoming race. */
+async function fetchAndUpsertEvent(slug: string, url: string): Promise<UpsertOutcome> {
+  const response = await fetchWithTimeout(url);
+  if (!response) return "skipped_unfetchable";
+  const html = await response.text();
+  const event = parseEventJsonLd(html);
+  if (!event || !event.name || !event.startDate) return "skipped_stale_or_invalid";
+
+  const raceDate = parseFindARaceDate(event.startDate);
+  // findarace's "current" sitemap still includes long-expired listings
+  // (seen in practice: a 2016 event) -- same principle as the RunSignup
+  // sync, never add a race that's already happened.
+  if (!raceDate || raceDate.getTime() < today().getTime()) return "skipped_stale_or_invalid";
+
+  await prisma.race.upsert({
+    where: { source_externalId: { source: "FINDARACE", externalId: slug } },
+    create: {
+      source: "FINDARACE",
+      externalId: slug,
+      name: event.name,
+      raceDate,
+      city: event.city ?? undefined,
+      state: event.state ?? undefined,
+      country: "US",
+      distanceMeters: inferDistanceMetersFromName(event.name) ?? undefined,
+      terrainType: "UNKNOWN",
+      description: event.description ?? undefined,
+      sourceUrl: event.url || url,
+      lastSyncedAt: new Date(),
+    },
+    update: {
+      raceDate,
+      city: event.city ?? undefined,
+      state: event.state ?? undefined,
+      description: event.description ?? undefined,
+      lastSyncedAt: new Date(),
+    },
+  });
+  return "added";
+}
+
+/**
+ * Best-effort dedup against races already in the catalog from another
+ * source -- word overlap on the slug, not exact matching, but good enough
+ * to catch the common case (a big race cross-listed on both RunSignup and
+ * findarace).
+ */
+async function isProbablyAlreadyInCatalog(slug: string): Promise<boolean> {
+  const significantWords = slug.split("-").filter((w) => w.length > 3 && !/^\d+$/.test(w));
+  if (significantWords.length < 2) return false;
+
+  const match = await prisma.race.findFirst({
+    where: {
+      AND: significantWords.slice(0, 3).map((word) => ({ name: { contains: word, mode: "insensitive" as const } })),
+    },
+    select: { id: true },
+  });
+  return !!match;
+}
+
 export interface FindARaceDiscoveryResult {
   candidatesFound: number;
   fetched: number;
@@ -231,66 +293,25 @@ export async function discoverNewFindARaceEvents(): Promise<FindARaceDiscoveryRe
       select: { id: true },
     });
     if (alreadySynced) continue;
-
-    // Cheap dedup against races we already have from another source --
-    // not perfect (best-effort word overlap on the slug), but good enough
-    // to avoid an obvious duplicate of an already-synced RunSignup/curated
-    // race, which is the common case (e.g. a big race cross-listed on
-    // both RunSignup and findarace).
-    const significantWords = candidate.slug.split("-").filter((w) => w.length > 3 && !/^\d+$/.test(w));
-    if (significantWords.length >= 2) {
-      const possibleDuplicate = await prisma.race.findFirst({
-        where: {
-          AND: significantWords
-            .slice(0, 3)
-            .map((word) => ({ name: { contains: word, mode: "insensitive" as const } })),
-        },
-        select: { id: true },
-      });
-      if (possibleDuplicate) continue;
-    }
+    if (await isProbablyAlreadyInCatalog(candidate.slug)) continue;
 
     fetched++;
     await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
 
-    const response = await fetchWithTimeout(candidate.url);
-    if (!response) continue;
-    const html = await response.text();
-    const event = parseEventJsonLd(html);
-    if (!event || !event.name || !event.startDate) continue;
-
-    const raceDate = parseFindARaceDate(event.startDate);
-    // findarace's "current" sitemap still includes long-expired listings
-    // (seen in practice: a 2016 event) -- same principle as the RunSignup
-    // sync, never add a race that's already happened.
-    if (!raceDate || raceDate.getTime() < today().getTime()) continue;
-
-    await prisma.race.upsert({
-      where: { source_externalId: { source: "FINDARACE", externalId: candidate.slug } },
-      create: {
-        source: "FINDARACE",
-        externalId: candidate.slug,
-        name: event.name,
-        raceDate,
-        city: event.city ?? undefined,
-        state: event.state ?? undefined,
-        country: "US",
-        distanceMeters: inferDistanceMetersFromName(event.name) ?? undefined,
-        terrainType: "UNKNOWN",
-        description: event.description ?? undefined,
-        sourceUrl: event.url || candidate.url,
-        lastSyncedAt: new Date(),
-      },
-      update: {
-        raceDate,
-        city: event.city ?? undefined,
-        state: event.state ?? undefined,
-        description: event.description ?? undefined,
-        lastSyncedAt: new Date(),
-      },
-    });
-    added++;
+    const outcome = await fetchAndUpsertEvent(candidate.slug, candidate.url);
+    if (outcome === "added") added++;
   }
 
   return { candidatesFound: candidates.length, fetched, added };
+}
+
+/**
+ * Targeted lookup for one specific findarace event slug (e.g.
+ * "austin-marathon"), bypassing the random sampling the general monthly
+ * discovery uses -- for when a specific known-missing race should be
+ * added right away rather than waiting for it to come up by chance.
+ */
+export async function syncSpecificFindARaceEvent(slug: string): Promise<UpsertOutcome> {
+  const url = `https://findarace.com/us/events/${slug}`;
+  return fetchAndUpsertEvent(slug, url);
 }

@@ -66,6 +66,34 @@ export async function getValidAccessToken(user: User): Promise<string> {
   return refreshed.access_token;
 }
 
+export interface StravaSummaryClub {
+  id: number;
+  name: string;
+  url?: string | null; // Strava's own vanity-slug for the club, e.g. "boston-running-club"
+  city?: string | null;
+  state?: string | null;
+  member_count?: number | null;
+}
+
+/**
+ * Clubs the athlete has already joined on Strava -- distinct from
+ * lib/clubs/discovery.ts's web-search-based discovery of *new* nearby
+ * clubs (Strava's API has no location-based club search, only "clubs this
+ * athlete belongs to"). No pagination here: Strava doesn't paginate this
+ * endpoint, and a real athlete's club count is always small.
+ */
+export async function fetchAthleteClubs(accessToken: string): Promise<StravaSummaryClub[]> {
+  const response = await fetch(`${STRAVA_API_BASE}/athlete/clubs`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Strava clubs fetch failed: ${response.status} ${await response.text()}`);
+  }
+
+  return response.json();
+}
+
 export async function fetchActivities(
   accessToken: string,
   after?: Date

@@ -78,6 +78,7 @@ enum ClubDiscoverySource {
   RUNNING_STORE
   RRCA_DIRECTORY
   MANUAL
+  STRAVA_MEMBERSHIP
 }
 
 enum ClubStatus {
@@ -280,11 +281,14 @@ model Club {
   discoverySource        ClubDiscoverySource
   status                 ClubStatus          @default(CANDIDATE)
   notes                  String?
+  stravaClubId           BigInt?
+  memberCount            Int?
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 
   sessions ClubSession[]
 
+  @@unique([userId, stravaClubId])
   @@index([userId, status])
 }
 
