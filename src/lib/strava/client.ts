@@ -95,18 +95,39 @@ export async function fetchAthleteClubs(accessToken: string): Promise<StravaSumm
 }
 
 export interface StravaGroupEventSummary {
-  id: number;
+  id: string; // kept as a string -- see parseJsonPreservingLargeIds
   title: string;
 }
 
 export interface StravaGroupEventDetail {
-  id: number;
+  id: string; // kept as a string -- see parseJsonPreservingLargeIds
   title: string;
   description?: string | null;
   activity_type?: string | null;
   address?: string | null;
   zone?: string | null; // IANA timezone, e.g. "America/Chicago"
   upcoming_occurrences?: string[]; // ISO 8601 UTC timestamps
+  /**
+   * "no_repeat" | "weekly" | ... -- events with "no_repeat" are one-time
+   * events (often years-old historical ones still returned by the list
+   * endpoint), NOT an ongoing weekly session, and must not be treated as
+   * one. Confirmed empirically: every event in a real club's history came
+   * back "no_repeat" except its one genuinely-recurring weekly run.
+   */
+  frequency?: string | null;
+}
+
+/**
+ * Strava's group event IDs can exceed Number.MAX_SAFE_INTEGER (confirmed
+ * empirically: a real event ID of 3508970016443623526 silently became
+ * 3508970016443623400 through plain JSON.parse -- a different number,
+ * pointing at a nonexistent event on the next request). Rather than trust
+ * response.json(), this quotes any bare "id" value of 15+ digits in the
+ * raw text before parsing, so it survives as a precise string instead of
+ * a lossy double.
+ */
+function parseJsonPreservingLargeIds(text: string): unknown {
+  return JSON.parse(text.replace(/"id":(\d{15,})/g, '"id":"$1"'));
 }
 
 /**
@@ -125,7 +146,7 @@ export async function fetchClubGroupEvents(accessToken: string, clubId: number):
     throw new Error(`Strava club group events fetch failed: ${response.status} ${await response.text()}`);
   }
 
-  return response.json();
+  return parseJsonPreservingLargeIds(await response.text()) as StravaGroupEventSummary[];
 }
 
 /**
@@ -134,13 +155,13 @@ export async function fetchClubGroupEvents(accessToken: string, clubId: number):
  * "every Tuesday 6am" recurring run) plus the event's own IANA timezone,
  * needed to convert that UTC timestamp to the correct local day/time.
  */
-export async function fetchGroupEventDetail(accessToken: string, eventId: number): Promise<StravaGroupEventDetail | null> {
+export async function fetchGroupEventDetail(accessToken: string, eventId: string): Promise<StravaGroupEventDetail | null> {
   const response = await fetch(`${STRAVA_API_BASE}/group_events/${eventId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!response.ok) return null;
-  return response.json();
+  return parseJsonPreservingLargeIds(await response.text()) as StravaGroupEventDetail;
 }
 
 export async function fetchActivities(

@@ -283,6 +283,7 @@ model Club {
   notes                  String?
   stravaClubId           BigInt?
   memberCount            Int?
+  lastEventsSyncedAt     DateTime?
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 
