@@ -94,6 +94,55 @@ export async function fetchAthleteClubs(accessToken: string): Promise<StravaSumm
   return response.json();
 }
 
+export interface StravaGroupEventSummary {
+  id: number;
+  title: string;
+}
+
+export interface StravaGroupEventDetail {
+  id: number;
+  title: string;
+  description?: string | null;
+  activity_type?: string | null;
+  address?: string | null;
+  zone?: string | null; // IANA timezone, e.g. "America/Chicago"
+  upcoming_occurrences?: string[]; // ISO 8601 UTC timestamps
+}
+
+/**
+ * Lists a club's group events (resource_state 2 -- summary only). Per
+ * Strava's docs this "current occurrence" data can be stale for recurring
+ * events (seen in practice: an anchor date years in the past), so this is
+ * only used to get event IDs; real scheduling data comes from
+ * fetchGroupEventDetail below.
+ */
+export async function fetchClubGroupEvents(accessToken: string, clubId: number): Promise<StravaGroupEventSummary[]> {
+  const response = await fetch(`${STRAVA_API_BASE}/clubs/${clubId}/group_events`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Strava club group events fetch failed: ${response.status} ${await response.text()}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * The single-event endpoint returns resource_state 3 -- a real, current
+ * upcoming_occurrences entry (confirmed empirically against a club's actual
+ * "every Tuesday 6am" recurring run) plus the event's own IANA timezone,
+ * needed to convert that UTC timestamp to the correct local day/time.
+ */
+export async function fetchGroupEventDetail(accessToken: string, eventId: number): Promise<StravaGroupEventDetail | null> {
+  const response = await fetch(`${STRAVA_API_BASE}/group_events/${eventId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) return null;
+  return response.json();
+}
+
 export async function fetchActivities(
   accessToken: string,
   after?: Date

@@ -304,11 +304,13 @@ model ClubSession {
   meetingLocation       String?
   isConfirmed           Boolean         @default(false)
   rawText               String?
+  stravaEventId         BigInt?
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
   suggestions ClubSuggestion[]
 
+  @@unique([clubId, stravaEventId])
   @@index([clubId, dayOfWeek])
 }
 

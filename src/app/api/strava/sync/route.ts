@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getValidAccessToken, fetchActivities } from "@/lib/strava/client";
 import { upsertRuns, autoLinkRuns } from "@/lib/strava/sync";
 import { syncStravaClubs } from "@/lib/clubs/strava-sync";
+import { syncClubSessionsFromStrava } from "@/lib/clubs/strava-events-sync";
 import { checkAndRecalibratePlan } from "@/lib/coaching/recalibrate-plan";
 import { addDays } from "@/lib/utils/date";
 
@@ -26,8 +27,10 @@ export async function POST() {
   // Best-effort: a clubs-fetch failure (e.g. a token scope gap) shouldn't
   // fail the whole sync when the run-import part succeeded fine.
   let clubs: { added: number; updated: number } | null = null;
+  let clubSessions: { clubsProcessed: number; sessionsAdded: number; sessionsUpdated: number } | null = null;
   try {
     clubs = await syncStravaClubs(user.id, accessToken);
+    clubSessions = await syncClubSessionsFromStrava(user.id, accessToken);
   } catch (error) {
     console.error("Strava club sync failed:", error);
   }
@@ -37,5 +40,11 @@ export async function POST() {
     data: { lastSyncedAt: new Date() },
   });
 
-  return NextResponse.json({ created: createdCount, updated: updatedCount, linked: linkedCount, clubs });
+  return NextResponse.json({
+    created: createdCount,
+    updated: updatedCount,
+    linked: linkedCount,
+    clubs,
+    clubSessions,
+  });
 }
