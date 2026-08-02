@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RaceSearchStep } from "./RaceSearchStep";
+import { DISTANCE_MILES, REFERENCE_DISTANCE_MILES, riegelPredictTime } from "@/lib/plan-generator";
+import type { RaceDistance } from "@/lib/plan-generator";
 import { formatPaceSecondsPerMile } from "@/lib/utils/pace";
 import { Card } from "@/components/ui/Card";
 import { Input, Select } from "@/components/ui/Input";
@@ -46,6 +48,7 @@ export function PlanSetupWizard() {
   const [error, setError] = useState<string | null>(null);
   const [fitnessSnapshot, setFitnessSnapshot] = useState<FitnessSnapshotPreview | null>(null);
   const mileageEditedByUser = useRef(false);
+  const goalTimeEditedByUser = useRef(false);
 
   useEffect(() => {
     fetch("/api/fitness-assessment")
@@ -60,6 +63,28 @@ export function PlanSetupWizard() {
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Suggests a goal finish time by projecting the fitness snapshot's
+  // 10K-equivalent pace to the currently-selected race distance via Riegel
+  // -- the same math src/lib/plan-generator/goal-pace.ts uses server-side
+  // when no goal time is given, just surfaced here as an editable starting
+  // point instead of an invisible fallback. Recomputes if the race distance
+  // changes, but never overwrites a value the user has actually typed.
+  useEffect(() => {
+    if (goalTimeEditedByUser.current) return;
+    if (!fitnessSnapshot?.riegelEstimatedPaceSecondsPerMile) return;
+
+    const raceDistanceMiles = DISTANCE_MILES[raceDistance as RaceDistance];
+    if (!raceDistanceMiles) return;
+
+    const referenceTimeSeconds = fitnessSnapshot.riegelEstimatedPaceSecondsPerMile * REFERENCE_DISTANCE_MILES;
+    const suggestedSeconds = riegelPredictTime(referenceTimeSeconds, REFERENCE_DISTANCE_MILES, raceDistanceMiles);
+
+    const totalMinutes = Math.round(suggestedSeconds / 60);
+    setGoalHours(String(Math.floor(totalMinutes / 60)));
+    setGoalMinutes(String(totalMinutes % 60).padStart(2, "0"));
+    setGoalSeconds("00");
+  }, [fitnessSnapshot, raceDistance]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -179,7 +204,10 @@ export function PlanSetupWizard() {
               min={0}
               placeholder="hh"
               value={goalHours}
-              onChange={(e) => setGoalHours(e.target.value)}
+              onChange={(e) => {
+                goalTimeEditedByUser.current = true;
+                setGoalHours(e.target.value);
+              }}
               className="w-16"
             />
             <Input
@@ -188,7 +216,10 @@ export function PlanSetupWizard() {
               max={59}
               placeholder="mm"
               value={goalMinutes}
-              onChange={(e) => setGoalMinutes(e.target.value)}
+              onChange={(e) => {
+                goalTimeEditedByUser.current = true;
+                setGoalMinutes(e.target.value);
+              }}
               className="w-16"
             />
             <Input
@@ -197,10 +228,18 @@ export function PlanSetupWizard() {
               max={59}
               placeholder="ss"
               value={goalSeconds}
-              onChange={(e) => setGoalSeconds(e.target.value)}
+              onChange={(e) => {
+                goalTimeEditedByUser.current = true;
+                setGoalSeconds(e.target.value);
+              }}
               className="w-16"
             />
           </div>
+          {fitnessSnapshot?.riegelEstimatedPaceSecondsPerMile && (
+            <p className="text-xs text-muted-foreground">
+              Suggested from your recent Strava fitness — edit if it doesn&rsquo;t look right.
+            </p>
+          )}
         </div>
 
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
