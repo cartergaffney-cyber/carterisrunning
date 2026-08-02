@@ -300,14 +300,18 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={race.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded object-contain" />
                 )}
-                <div className="flex flex-1 flex-col">
+                <div className="flex min-w-0 flex-1 flex-col">
                   <span className="font-medium">{race.commonName ?? race.name}</span>
                   <span className="text-xs text-muted-foreground">
-                    {race.raceDate
-                      ? new Date(race.raceDate).toLocaleDateString(undefined, { timeZone: "UTC" })
-                      : "date unknown"}
-                    {race.city ? ` · ${race.city}, ${race.state ?? ""}` : ""}
-                    {race.distanceMeters ? ` · ${(race.distanceMeters * METERS_TO_MILES).toFixed(1)} mi` : ""}
+                    {[
+                      race.distanceMeters ? `${(race.distanceMeters * METERS_TO_MILES).toFixed(1)} mi` : null,
+                      race.raceDate
+                        ? new Date(race.raceDate).toLocaleDateString(undefined, { timeZone: "UTC" })
+                        : "date unknown",
+                      race.city ? `${race.city}, ${race.state ?? ""}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                 </div>
               </button>
@@ -394,10 +398,12 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
                         <span className="text-xs text-accent">{hostname(candidate.sourceUrl)}</span>
                       )}
                       <span className="text-xs text-muted-foreground">
-                        {candidate.city ? `${candidate.city}, ${candidate.state ?? ""}` : ""}
-                        {candidate.distanceMeters
-                          ? ` · ${(candidate.distanceMeters * METERS_TO_MILES).toFixed(1)} mi`
-                          : ""}
+                        {[
+                          candidate.distanceMeters ? `${(candidate.distanceMeters * METERS_TO_MILES).toFixed(1)} mi` : null,
+                          candidate.city ? `${candidate.city}, ${candidate.state ?? ""}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                       {candidate.raw?.snippet && (
                         <span className="text-xs text-muted-foreground italic">
@@ -428,13 +434,15 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
                       >
                         <span className="font-medium">{candidate.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          {candidate.raceDate
-                            ? new Date(candidate.raceDate).toLocaleDateString(undefined, { timeZone: "UTC" })
-                            : "date unknown"}
-                          {candidate.city ? ` · ${candidate.city}, ${candidate.state ?? ""}` : ""}
-                          {candidate.distanceMeters
-                            ? ` · ${(candidate.distanceMeters * METERS_TO_MILES).toFixed(1)} mi`
-                            : ""}
+                          {[
+                            candidate.distanceMeters ? `${(candidate.distanceMeters * METERS_TO_MILES).toFixed(1)} mi` : null,
+                            candidate.raceDate
+                              ? new Date(candidate.raceDate).toLocaleDateString(undefined, { timeZone: "UTC" })
+                              : "date unknown",
+                            candidate.city ? `${candidate.city}, ${candidate.state ?? ""}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </span>
                       </button>
                     )
