@@ -146,6 +146,19 @@ export const CURATED_MAJOR_RACES: CuratedMajorRace[] = [
     websiteUrl: "https://flyingpigmarathon.com/",
   },
   {
+    slug: "austin-marathon",
+    name: "Ascension Seton Austin Marathon",
+    commonName: "Austin Marathon",
+    raceDate: "2027-02-14",
+    city: "Austin",
+    state: "TX",
+    distanceMiles: 26.2,
+    terrainType: "ROAD",
+    description:
+      "Austin's home-grown marathon since 1992, looping through downtown and the city's neighborhoods with a half marathon and 5K run alongside it the same morning.",
+    websiteUrl: "https://youraustinmarathon.com/",
+  },
+  {
     slug: "houston-marathon",
     name: "Chevron Houston Marathon",
     commonName: "Houston Marathon",
