@@ -51,6 +51,7 @@ enum RaceSource {
   WEB_SEARCH
   MANUAL
   CURATED
+  FINDARACE
 }
 
 enum TerrainType {

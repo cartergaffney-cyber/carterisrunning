@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncRunSignupRaces, prunePastSyncedRaces } from "@/lib/race-catalog/runsignup-sync";
+import { discoverNewFindARaceEvents } from "@/lib/race-catalog/findarace-sync";
+import { enrichRacesMissingWebsite } from "@/lib/race-catalog/enrich-race";
 import { addDays, today } from "@/lib/utils/date";
 
 const NEAR_TERM_DAYS = 60;
@@ -32,14 +34,25 @@ export async function GET(request: NextRequest) {
   const nearTerm = await syncRunSignupRaces({ startDate: now, endDate: addDays(now, NEAR_TERM_DAYS) });
 
   let farMonth: { upserted: number; skippedNoDate: number } | null = null;
+  let findARaceDiscovery: Awaited<ReturnType<typeof discoverNewFindARaceEvents>> | null = null;
+  let findARaceEnrichment: Awaited<ReturnType<typeof enrichRacesMissingWebsite>> | null = null;
+
   if (now.getUTCDate() === 1) {
     farMonth = await syncRunSignupRaces({
       startDate: addDays(now, WINDOW_DAYS - FAR_MONTH_BUFFER_DAYS),
       endDate: addDays(now, WINDOW_DAYS),
     });
+
+    // Gap-filling for races that don't use RunSignup -- see findarace-sync.ts
+    // for why this source and this cadence/volume. Monthly, not daily: this
+    // is meant to catch races the API-driven sync structurally can't see,
+    // not to track fast-changing near-term details the way the RunSignup
+    // near-term refresh above does.
+    findARaceDiscovery = await discoverNewFindARaceEvents();
+    findARaceEnrichment = await enrichRacesMissingWebsite();
   }
 
   const pruned = await prunePastSyncedRaces();
 
-  return NextResponse.json({ nearTerm, farMonth, pruned });
+  return NextResponse.json({ nearTerm, farMonth, findARaceDiscovery, findARaceEnrichment, pruned });
 }
