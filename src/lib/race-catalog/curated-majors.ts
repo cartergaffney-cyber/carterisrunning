@@ -254,6 +254,19 @@ export const CURATED_MAJOR_RACES: CuratedMajorRace[] = [
     websiteUrl: "https://www.leadvilleraceseries.com/run/leadvilletrail100run/",
   },
   {
+    slug: "austin-rattler",
+    name: "Life Time Austin Rattler MTB & Run",
+    commonName: "Austin Rattler",
+    raceDate: "2026-11-15",
+    city: "Burnet",
+    state: "TX",
+    distanceMiles: 31.07, // 50K -- one of 3 run distances offered; the confirmed one, as a Leadville Trail 100 Run qualifier
+    terrainType: "TRAIL",
+    description:
+      "A Texas Hill Country trail race at Reveille Peak Ranch mixing singletrack and fire roads past lake views; the 50K distance is a qualifier for the Life Time Leadville Trail 100 Run. Run day follows a Saturday mountain bike race at the same venue.",
+    websiteUrl: "https://www.austinrattler.com/",
+  },
+  {
     slug: "badwater-135",
     name: "Badwater 135",
     commonName: "Badwater Ultramarathon",

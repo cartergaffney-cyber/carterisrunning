@@ -46,6 +46,11 @@ const METERS_TO_FEET = 3.28084;
 const INITIAL_OTHER_RESULTS_SHOWN = 5;
 const TYPEAHEAD_DEBOUNCE_MS = 200;
 const MIN_TYPEAHEAD_LENGTH = 2;
+// A higher bar than the typeahead's own minimum, and a longer debounce --
+// this fires a real external search (RunSignup + SerpApi), so it shouldn't
+// trigger on a query that's still just a few characters into being typed.
+const MIN_AUTO_WEB_SEARCH_LENGTH = 4;
+const AUTO_WEB_SEARCH_DEBOUNCE_MS = 700;
 
 function toDateInputValue(iso: string | null): string {
   return iso ? iso.slice(0, 10) : "";
@@ -66,6 +71,10 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [typeaheadLoading, setTypeaheadLoading] = useState(false);
   const requestIdRef = useRef(0);
+  // Tracks which query string has already auto-triggered a web search, so
+  // a query that settles at zero catalog matches doesn't refire the search
+  // on every re-render while the user sits on that same text.
+  const autoSearchedQueryRef = useRef<string | null>(null);
 
   // Live web-search lookup -- demoted to a secondary "can't find it" escape
   // hatch, gated behind `showLiveSearch`. Logic below is unchanged from
@@ -119,6 +128,31 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Once the catalog typeahead has genuinely settled on zero matches for a
+  // long-enough query, automatically fall through to the live web search
+  // instead of waiting on the user to notice and click "Can't find it?".
+  // A confirmed result still always goes through the confirm-details step
+  // below before POST /api/races -- catalog rows have no per-user owner
+  // (see Race's schema), so anything confirmed here is already shared
+  // across every user's search, which is exactly why it still gets a human
+  // check first rather than being added sight-unseen.
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < MIN_AUTO_WEB_SEARCH_LENGTH) return;
+    if (typeaheadLoading || suggestions.length > 0) return;
+    if (showLiveSearch || autoSearchedQueryRef.current === trimmed) return;
+
+    const timer = setTimeout(() => {
+      autoSearchedQueryRef.current = trimmed;
+      setShowLiveSearch(true);
+      setName(trimmed);
+      handleSearch(trimmed);
+    }, AUTO_WEB_SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, typeaheadLoading, suggestions, showLiveSearch]);
+
   function selectCatalogRace(race: CatalogSuggestion) {
     // Catalog rows are already-vetted (curated by hand, or synced from
     // RunSignup with a real external ID), so unlike the live-search path
@@ -136,8 +170,9 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
     });
   }
 
-  async function handleSearch() {
-    if (!name.trim()) {
+  async function handleSearch(nameOverride?: string) {
+    const searchName = nameOverride ?? name;
+    if (!searchName.trim()) {
       setError("Enter a race name to search.");
       return;
     }
@@ -151,7 +186,7 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
       const response = await fetch("/api/races/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, city: city || undefined, state: state || undefined }),
+        body: JSON.stringify({ name: searchName, city: city || undefined, state: state || undefined }),
       });
       if (!response.ok) {
         setError("Search failed.");
@@ -286,7 +321,9 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
             )}
             {!typeaheadLoading && suggestions.length === 0 && (
               <div className="p-3 text-sm text-muted-foreground">
-                No matches yet — keep typing, or search the web below.
+                {showLiveSearch
+                  ? "No matches in our list — searching the web below…"
+                  : "No matches yet — keep typing, or it'll search the web automatically."}
               </div>
             )}
             {suggestions.map((race) => (
@@ -368,7 +405,7 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
                 className="w-24"
               />
             </div>
-            <Button type="button" onClick={handleSearch} variant="secondary" disabled={searching} className="w-fit">
+            <Button type="button" onClick={() => handleSearch()} variant="secondary" disabled={searching} className="w-fit">
               {searching ? "Searching…" : "Search"}
             </Button>
           </div>
