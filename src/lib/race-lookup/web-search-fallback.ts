@@ -1,6 +1,6 @@
 import { searchWeb, SearchNotConfiguredError } from "@/lib/search/search-client";
 import { fetchPageText } from "@/lib/http/fetch-page-text";
-import { parseCoursePage } from "./parse-course-page";
+import { parseCoursePage, parseDateFromText } from "./parse-course-page";
 import { inferDistanceMetersFromName } from "./distance-mapping";
 import type { RaceLookupQuery, RaceLookupResult } from "./types";
 
@@ -10,19 +10,16 @@ import type { RaceLookupQuery, RaceLookupResult } from "./types";
  * major races (Boston, NYC, Chicago, ...) that run their own registration
  * systems and simply aren't on RunSignup either. Searches the web for the
  * official race page, fetches it, and parses whatever distance/elevation/
- * terrain info can be found. Returns null (not an error) if no search
+ * terrain/date info can be found. Returns null (not an error) if no search
  * provider is configured, or if nothing usable turns up — the confirm form
  * is where gaps get filled in.
  *
- * Race date is deliberately never guessed from page text here, even though
- * it's the field users most want auto-filled: a race's own marketing page
- * is often full of OTHER dates (news posts, past-year results, press
- * releases) that a generic date regex could easily grab instead of the
- * actual next race day, and getting the race date wrong silently corrupts
- * the whole plan built from it (every week, phase, and taper date derives
- * from it). Distance is a safer bet -- see inferDistanceMetersFromName --
- * since standard race naming ("X Marathon") is a reliable, low-ambiguity
- * signal in a way free-text dates are not.
+ * Race date is a best-effort parse (see parseDateFromText) -- a page can
+ * mention other dates (past results, news posts) that a generic date regex
+ * could latch onto instead of the actual next race day. Surfaced as a
+ * pre-filled, editable suggestion rather than skipped, on the reasoning
+ * that a wrong pre-fill the user can see and correct beats an empty field
+ * they might not think to fill in at all.
  */
 export async function searchTrailRaceViaWebSearch(
   query: RaceLookupQuery
@@ -53,11 +50,11 @@ export async function searchTrailRaceViaWebSearch(
     return {
       source: "WEB_SEARCH",
       name: topResult.title || query.name,
-      raceDate: null,
+      raceDate: parseDateFromText(`${topResult.title} ${topResult.snippet}`),
       city: query.city,
       state: query.state,
       distanceMeters: inferDistanceMetersFromName(topResult.title || query.name),
-      terrainType: "UNKNOWN",
+      terrainType: "ROAD",
       elevationGainMeters: null,
       sourceUrl: topResult.url,
     };
@@ -73,11 +70,11 @@ export async function searchTrailRaceViaWebSearch(
   return {
     source: "WEB_SEARCH",
     name,
-    raceDate: null,
+    raceDate: parseDateFromText(page.text) ?? parseDateFromText(`${topResult.title} ${topResult.snippet}`),
     city: query.city,
     state: query.state,
     distanceMeters: parsed.distanceMeters ?? inferDistanceMetersFromName(name) ?? inferDistanceMetersFromName(query.name),
-    terrainType: parsed.terrainType ?? "UNKNOWN",
+    terrainType: parsed.terrainType ?? "ROAD",
     elevationGainMeters: parsed.elevationGainMeters ?? null,
     sourceUrl: topResult.url,
     raw: { title: page.title, snippet: topResult.snippet },

@@ -98,7 +98,7 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
     raceDate: "",
     city: "",
     state: "",
-    terrainType: "UNKNOWN",
+    terrainType: "ROAD",
     elevationGainFeet: "",
   });
 
@@ -208,7 +208,11 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
       raceDate: toDateInputValue(candidate.raceDate),
       city: candidate.city ?? "",
       state: candidate.state ?? "",
-      terrainType: candidate.terrainType,
+      // The surface only offers Road/Trail -- Mixed and Unknown (still
+      // possible values from a search result) fall back to Road, the more
+      // common case, rather than surfacing a third/fourth option for what's
+      // genuinely a rare distinction most users won't think to change.
+      terrainType: candidate.terrainType === "TRAIL" ? "TRAIL" : "ROAD",
       elevationGainFeet: candidate.elevationGainMeters
         ? String(Math.round(candidate.elevationGainMeters * METERS_TO_FEET))
         : "",
@@ -218,7 +222,7 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
 
   function selectManual() {
     setSelected(null);
-    setForm({ name, raceDate: "", city, state, terrainType: "UNKNOWN", elevationGainFeet: "" });
+    setForm({ name, raceDate: "", city, state, terrainType: "ROAD", elevationGainFeet: "" });
     setShowConfirmForm(true);
   }
 
@@ -448,8 +452,7 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
                         </span>
                       )}
                       <span className="text-xs text-muted-foreground">
-                        Race date isn&rsquo;t guessed automatically (the snippet above may show it) — confirm it
-                        below.
+                        Date is a best-effort guess from the page — double-check it below.
                       </span>
                     </button>
                   ))}
@@ -534,10 +537,8 @@ export function RaceSearchStep({ onConfirmed }: { onConfirmed: (result: Confirme
               </div>
               <div className="flex gap-2">
                 <Select value={form.terrainType} onChange={(e) => setForm({ ...form, terrainType: e.target.value })}>
-                  <option value="UNKNOWN">Terrain unknown</option>
                   <option value="ROAD">Road</option>
                   <option value="TRAIL">Trail</option>
-                  <option value="MIXED">Mixed</option>
                 </Select>
                 <Input
                   type="number"

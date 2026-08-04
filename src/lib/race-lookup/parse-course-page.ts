@@ -39,3 +39,38 @@ export function parseCoursePage(text: string): ParsedCourseInfo {
 
   return result;
 }
+
+const MONTH_NAMES = [
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+];
+
+/**
+ * Best-effort "Month D, YYYY" extraction from free text (e.g. a search
+ * snippet or fetched page). UTC-anchored, matching this app's date
+ * convention (see utils/date.ts). Not guaranteed to find the *right* date
+ * if a page mentions several -- callers surface it as an editable,
+ * pre-filled suggestion rather than a silent, un-editable fact.
+ */
+export function parseDateFromText(text: string): Date | null {
+  const pattern = new RegExp(`\\b(${MONTH_NAMES.join("|")})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(\\d{4})\\b`, "i");
+  const match = text.match(pattern);
+  if (!match) return null;
+
+  const monthIndex = MONTH_NAMES.indexOf(match[1].toLowerCase());
+  const day = parseInt(match[2], 10);
+  const year = parseInt(match[3], 10);
+  if (monthIndex < 0 || day < 1 || day > 31) return null;
+
+  return new Date(Date.UTC(year, monthIndex, day));
+}

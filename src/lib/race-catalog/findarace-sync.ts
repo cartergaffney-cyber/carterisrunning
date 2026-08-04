@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { inferDistanceMetersFromName } from "@/lib/race-lookup/distance-mapping";
 import { parseLocalDate, today } from "@/lib/utils/date";
+import type { TerrainType } from "@/generated/prisma/client";
 
 const SITEMAP_URL = "https://findarace.com/us/sitemap-events-current.xml";
 const USER_AGENT = "Mozilla/5.0 (compatible; CarterIsRunningBot/1.0; +https://www.carterisrunning.com)";
@@ -161,6 +162,20 @@ function parseFindARaceDate(startDate: string): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+/**
+ * The confirm-details surface only offers Road/Trail, defaulting to Road
+ * when undetermined (the more common case) rather than a separate
+ * Unknown/Mixed option -- applied here too so a findarace-sourced race
+ * matches what a manually-confirmed one would get. findarace's JSON-LD has
+ * no dedicated terrain field, so this is a keyword check against the
+ * event's own name/description text.
+ */
+function inferTerrainType(text: string): TerrainType {
+  const lower = text.toLowerCase();
+  if (lower.includes("trail") || lower.includes("single track") || lower.includes("singletrack")) return "TRAIL";
+  return "ROAD";
+}
+
 /** Extracts the schema.org SportsEvent block from a findarace.com event page's JSON-LD. */
 function parseEventJsonLd(html: string): FindARaceEvent | null {
   const scriptPattern = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
@@ -229,7 +244,7 @@ async function fetchAndUpsertEvent(slug: string, url: string): Promise<UpsertOut
       state: event.state ?? undefined,
       country: "US",
       distanceMeters: inferDistanceMetersFromName(event.name) ?? undefined,
-      terrainType: "UNKNOWN",
+      terrainType: inferTerrainType(`${event.name} ${event.description ?? ""}`),
       description: event.description ?? undefined,
       sourceUrl: event.url || url,
       lastSyncedAt: new Date(),
