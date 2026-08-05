@@ -26,9 +26,13 @@ export interface CuratedMajorRace {
  * runsignup-sync.ts never finds them -- see KNOWLEDGE notes in Phase 9 of
  * the plan. Every date/website URL below was verified against a live search
  * during this list's creation, not guessed; fields I couldn't verify
- * confidently (most logo URLs, a few exact registration sub-paths,
- * participant counts for lesser-known races) are left null rather than
- * fabricated -- fill those in by hand later from the race's own site.
+ * confidently (a few exact registration sub-paths, participant counts for
+ * lesser-known races) are left null rather than fabricated.
+ *
+ * Logos are deliberately NOT listed here -- logo-lookup.ts derives them
+ * from each race's own site, so they stay current instead of rotting in
+ * this file. That relies on websiteUrl being set, which is the main reason
+ * to keep filling it in.
  * Dates are the *next* confirmed upcoming occurrence as of when this list
  * was written; each needs a manual bump once the following year's date is
  * announced (this list is not touched by the automated sync job).
@@ -59,6 +63,7 @@ export const CURATED_MAJOR_RACES: CuratedMajorRace[] = [
     terrainType: "ROAD",
     description:
       "The world's largest marathon by finishers, running through all five NYC boroughs from Staten Island to Central Park.",
+    websiteUrl: "https://www.nyrr.org/tcsnycmarathon",
   },
   {
     slug: "chicago-marathon",
@@ -71,6 +76,7 @@ export const CURATED_MAJOR_RACES: CuratedMajorRace[] = [
     terrainType: "ROAD",
     description:
       "A World Marathon Major known for its flat, fast course through Chicago's neighborhoods -- a frequent site of world and course records.",
+    websiteUrl: "https://www.chicagomarathon.com/",
   },
   {
     slug: "marine-corps-marathon",
@@ -180,6 +186,7 @@ export const CURATED_MAJOR_RACES: CuratedMajorRace[] = [
     distanceMiles: 26.2,
     terrainType: "ROAD",
     description: "\"The Stadium to the Sea\" -- a point-to-point course from Dodger Stadium to the Santa Monica coast.",
+    websiteUrl: "https://www.lamarathon.com/",
   },
   {
     slug: "peachtree-road-race",
