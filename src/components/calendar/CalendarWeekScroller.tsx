@@ -9,32 +9,35 @@ import type { CalendarDay, CalendarRaceSummary, CalendarWeek } from "@/lib/calen
 const WEEKDAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const DAY_CELL_HEIGHT = 220;
-const PHASE_BAR_HEIGHT = 22;
+// Bar plus the gap that separates one race's lane from the next.
+const PHASE_BAR_INNER = 22;
+const PHASE_LANE_GAP = 5;
+const PHASE_STRIP_PAD_TOP = 5;
+const PHASE_BAR_HEIGHT = PHASE_BAR_INNER + PHASE_LANE_GAP;
 const VISIBLE_WEEKS = 2;
+
+// Width of the chevron point. Each segment ends in an arrow and (unless it
+// starts the week) begins with a matching notch, so consecutive phases
+// interlock and the whole strip reads left-to-right like a delivery tracker.
+const ARROW_W = 11;
+const ARROW_HEAD = `polygon(0 0, calc(100% - ${ARROW_W}px) 0, 100% 50%, calc(100% - ${ARROW_W}px) 100%, 0 100%)`;
+const ARROW_MID = `polygon(0 0, calc(100% - ${ARROW_W}px) 0, 100% 50%, calc(100% - ${ARROW_W}px) 100%, 0 100%, ${ARROW_W}px 50%)`;
 
 /**
  * Phases run BASE -> BUILD -> PEAK -> TAPER, so the colours read as a heat
  * ramp that cools at the end: green while you're laying aerobic foundation,
  * amber as intensity climbs, red at peak load, then blue for the taper --
  * the one phase where doing less is the point.
+ *
+ * Solid fills rather than tints: at 22px these are the strongest horizontal
+ * element on the page, and a wash reads as decoration instead of as the
+ * progress track it's meant to be.
  */
 const PHASE_STYLES: Record<string, { label: string; className: string }> = {
-  BASE: {
-    label: "Aerobic Base",
-    className: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30",
-  },
-  BUILD: {
-    label: "Build",
-    className: "bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30",
-  },
-  PEAK: {
-    label: "Peak",
-    className: "bg-red-500/15 text-red-800 dark:text-red-300 border-red-500/30",
-  },
-  TAPER: {
-    label: "Taper",
-    className: "bg-indigo-500/15 text-indigo-800 dark:text-indigo-300 border-indigo-500/30",
-  },
+  BASE: { label: "Aerobic Base", className: "bg-emerald-600 text-white dark:bg-emerald-700" },
+  BUILD: { label: "Build", className: "bg-amber-500 text-white dark:bg-amber-600" },
+  PEAK: { label: "Peak", className: "bg-red-600 text-white dark:bg-red-700" },
+  TAPER: { label: "Taper", className: "bg-indigo-600 text-white dark:bg-indigo-700" },
 };
 
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
@@ -153,22 +156,35 @@ function PhaseBarRow({ week, race }: { week: CalendarWeek; race: CalendarRaceSum
   const segments = week.phaseSegments.filter((s) => s.planId === race.planId);
 
   return (
-    <div className="grid grid-cols-7" style={{ height: PHASE_BAR_HEIGHT }}>
+    <div
+      className="grid grid-cols-7 px-1"
+      style={{ height: PHASE_BAR_INNER, marginBottom: PHASE_LANE_GAP }}
+    >
       {segments.map((segment) => {
         const style = PHASE_STYLES[segment.phase] ?? {
           label: segment.phase,
-          className: "bg-surface-muted text-muted-foreground border-border",
+          className: "bg-surface-muted text-muted-foreground",
         };
+        // A segment starting the week has nothing to interlock with on its
+        // left, so it gets a flat edge instead of a notch.
+        const startsWeek = segment.startIndex === 0;
         return (
           <div
             key={`${segment.planId}-${segment.startIndex}`}
-            style={{ gridColumn: `${segment.startIndex + 1} / span ${segment.span}` }}
-            className={`flex items-center overflow-hidden border-l-2 px-2 ${style.className}`}
+            style={{
+              gridColumn: `${segment.startIndex + 1} / span ${segment.span}`,
+              clipPath: startsWeek ? ARROW_HEAD : ARROW_MID,
+              paddingLeft: startsWeek ? 8 : ARROW_W + 4,
+              paddingRight: ARROW_W + 4,
+            }}
+            className={`flex items-center justify-center overflow-hidden ${style.className}`}
             title={`${style.label} — ${race.raceName}`}
           >
-            <span className="truncate text-[11px] font-semibold leading-none">
+            <span className="truncate text-[11px] font-semibold uppercase tracking-wide leading-none">
               {style.label}
-              <span className="ml-1.5 font-normal opacity-75">{race.raceName}</span>
+              <span className="ml-1.5 font-medium normal-case tracking-normal opacity-80">
+                {race.raceName}
+              </span>
             </span>
           </div>
         );
@@ -192,7 +208,7 @@ export function CalendarWeekScroller({
   // Every week reserves a bar slot per race, even when that race has no
   // segments there, so all week rows stay the same height -- scroll snapping
   // depends on a single fixed row height.
-  const WEEK_ROW_HEIGHT = DAY_CELL_HEIGHT + races.length * PHASE_BAR_HEIGHT;
+  const WEEK_ROW_HEIGHT = DAY_CELL_HEIGHT + PHASE_STRIP_PAD_TOP + races.length * PHASE_BAR_HEIGHT;
   const maxIndex = Math.max(0, weeks.length - VISIBLE_WEEKS);
 
   const scrollToWeek = useCallback(
@@ -293,9 +309,11 @@ export function CalendarWeekScroller({
                     <DayCell key={day.date.toISOString()} day={day} />
                   ))}
                 </div>
-                {races.map((race) => (
-                  <PhaseBarRow key={race.planId} week={week} race={race} />
-                ))}
+                <div className="bg-surface-muted/40" style={{ paddingTop: PHASE_STRIP_PAD_TOP }}>
+                  {races.map((race) => (
+                    <PhaseBarRow key={race.planId} week={week} race={race} />
+                  ))}
+                </div>
               </div>
             ))}
           </div>
