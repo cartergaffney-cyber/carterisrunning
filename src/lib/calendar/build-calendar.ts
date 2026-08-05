@@ -35,7 +35,6 @@ export type DayAdjustment = { kind: "SHARPEN" | "RECOVER"; raceName: string; not
 
 export interface CalendarDay {
   date: Date;
-  inMonth: boolean;
   isToday: boolean;
   raceDays: CalendarRaceDay[];
   workout: CalendarWorkout | null;
@@ -54,12 +53,15 @@ export interface CalendarRaceSummary {
   priority: RacePriority;
 }
 
-export interface CalendarMonth {
-  year: number;
-  month: number; // 0-indexed, matching Date.getUTCMonth()
+export interface CalendarWeek {
+  weekStart: Date;
   days: CalendarDay[];
+}
+
+export interface CalendarRange {
+  weeks: CalendarWeek[];
   races: CalendarRaceSummary[];
-  /** True when an interim race reshaped days in this month. */
+  /** True when an interim race reshaped any day in the loaded range. */
   hasInterimAdjustments: boolean;
 }
 
@@ -102,16 +104,9 @@ function recoveryDaysFor(priority: RacePriority, raceDistance: RaceDistance): nu
   return INTERIM_ADJUSTMENT[priority].recoverDaysAfterBase + Math.round(miles / 6);
 }
 
-function buildMonthGrid(year: number, month: number): { date: Date; inMonth: boolean }[] {
-  const firstOfMonth = new Date(Date.UTC(year, month, 1));
-  const leadingBlanks = firstOfMonth.getUTCDay();
-  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-  const totalCells = Math.ceil((leadingBlanks + daysInMonth) / 7) * 7;
-
-  return Array.from({ length: totalCells }, (_, i) => {
-    const date = new Date(Date.UTC(year, month, 1 - leadingBlanks + i));
-    return { date, inMonth: date.getUTCMonth() === month && date.getUTCFullYear() === year };
-  });
+/** Sunday that starts the week containing `date`, UTC-anchored. */
+export function sundayOfWeek(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - date.getUTCDay()));
 }
 
 function dateKey(date: Date): string {
@@ -152,10 +147,14 @@ function resolveBackbonePlanId(date: Date, plans: PlanMeta[]): string | null {
   })[0].planId;
 }
 
-export async function buildCalendarMonth(userId: string, year: number, month: number): Promise<CalendarMonth> {
-  const grid = buildMonthGrid(year, month);
-  const rangeStart = grid[0].date;
-  const rangeEnd = grid[grid.length - 1].date;
+export async function buildCalendarRange(
+  userId: string,
+  anchorSunday: Date,
+  weekCount: number
+): Promise<CalendarRange> {
+  const grid = Array.from({ length: weekCount * 7 }, (_, i) => addDays(anchorSunday, i));
+  const rangeStart = grid[0];
+  const rangeEnd = grid[grid.length - 1];
 
   const plans = await prisma.trainingPlan.findMany({
     where: { userId, status: "ACTIVE" },
@@ -260,7 +259,7 @@ export async function buildCalendarMonth(userId: string, year: number, month: nu
   const todayKey = dateKey(today());
   let hasInterimAdjustments = false;
 
-  const days: CalendarDay[] = grid.map(({ date, inMonth }) => {
+  const days: CalendarDay[] = grid.map((date) => {
     const key = dateKey(date);
     const candidates = byDate.get(key) ?? [];
     const backbonePlanId = resolveBackbonePlanId(date, planMeta);
@@ -293,11 +292,10 @@ export async function buildCalendarMonth(userId: string, year: number, month: nu
     if (adjustment && workout && HARD_WORKOUT_TYPES.has(workout.workoutType)) {
       workout = { ...workout, workoutType: "EASY", easedFor: adjustment.raceName };
     }
-    if (adjustment && inMonth) hasInterimAdjustments = true;
+    if (adjustment) hasInterimAdjustments = true;
 
     return {
       date,
-      inMonth,
       isToday: key === todayKey,
       raceDays,
       workout,
@@ -308,10 +306,13 @@ export async function buildCalendarMonth(userId: string, year: number, month: nu
     };
   });
 
+  const weeks: CalendarWeek[] = Array.from({ length: weekCount }, (_, i) => ({
+    weekStart: grid[i * 7],
+    days: days.slice(i * 7, i * 7 + 7),
+  }));
+
   return {
-    year,
-    month,
-    days,
+    weeks,
     races: planMeta.map((m) => ({
       planId: m.planId,
       raceName: m.raceName,
