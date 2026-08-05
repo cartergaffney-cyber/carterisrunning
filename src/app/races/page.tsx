@@ -6,8 +6,9 @@ import { DISTANCE_LABELS } from "@/lib/plan-generator";
 import type { RaceDistance } from "@/lib/plan-generator";
 import { buildWeeksFromPlan } from "@/lib/plan-view/build-weeks";
 import { PlanTile } from "@/components/plan/PlanTile";
+import { diffInDays, today } from "@/lib/utils/date";
 
-export default async function PlansIndexPage() {
+export default async function RacesIndexPage() {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
@@ -54,10 +55,23 @@ export default async function PlansIndexPage() {
             <PlanTile
               key={plan.id}
               planId={plan.id}
-              title={plan.race?.name ?? DISTANCE_LABELS[plan.raceDistance as RaceDistance]}
+              title={plan.race?.commonName ?? plan.race?.name ?? DISTANCE_LABELS[plan.raceDistance as RaceDistance]}
               raceDistanceLabel={DISTANCE_LABELS[plan.raceDistance as RaceDistance]}
               raceDate={plan.raceDate}
               totalWeeks={plan.totalWeeks}
+              daysToRace={diffInDays(today(), plan.raceDate)}
+              race={
+                plan.race
+                  ? {
+                      city: plan.race.city,
+                      state: plan.race.state,
+                      logoUrl: plan.race.logoUrl,
+                      description: plan.race.description,
+                      terrainType: plan.race.terrainType,
+                      websiteUrl: plan.race.websiteUrl,
+                    }
+                  : null
+              }
               defaultExpanded={activePlans.length === 1}
               weeks={buildWeeksFromPlan(plan.plannedWorkouts)}
             />
