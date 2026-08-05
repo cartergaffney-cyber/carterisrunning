@@ -29,15 +29,32 @@ const ARROW_MID = `polygon(0 0, calc(100% - ${ARROW_W}px) 0, 100% 50%, calc(100%
  * amber as intensity climbs, red at peak load, then blue for the taper --
  * the one phase where doing less is the point.
  *
- * Solid fills rather than tints: at 22px these are the strongest horizontal
- * element on the page, and a wash reads as decoration instead of as the
- * progress track it's meant to be.
+ * Only the current week gets the solid fill. Saturating every week turns a
+ * long scroll into a wall of colour and flattens the one row that actually
+ * matters; tinting the rest keeps the phase readable while letting "where I
+ * am right now" carry the emphasis.
  */
-const PHASE_STYLES: Record<string, { label: string; className: string }> = {
-  BASE: { label: "Aerobic Base", className: "bg-emerald-600 text-white dark:bg-emerald-700" },
-  BUILD: { label: "Build", className: "bg-amber-500 text-white dark:bg-amber-600" },
-  PEAK: { label: "Peak", className: "bg-red-600 text-white dark:bg-red-700" },
-  TAPER: { label: "Taper", className: "bg-indigo-600 text-white dark:bg-indigo-700" },
+const PHASE_STYLES: Record<string, { label: string; solid: string; tinted: string }> = {
+  BASE: {
+    label: "Aerobic Base",
+    solid: "bg-emerald-600 text-white dark:bg-emerald-700",
+    tinted: "bg-emerald-500/15 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
+  },
+  BUILD: {
+    label: "Build",
+    solid: "bg-amber-500 text-white dark:bg-amber-600",
+    tinted: "bg-amber-500/15 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",
+  },
+  PEAK: {
+    label: "Peak",
+    solid: "bg-red-600 text-white dark:bg-red-700",
+    tinted: "bg-red-500/15 text-red-800 dark:bg-red-500/20 dark:text-red-300",
+  },
+  TAPER: {
+    label: "Taper",
+    solid: "bg-indigo-600 text-white dark:bg-indigo-700",
+    tinted: "bg-indigo-500/15 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300",
+  },
 };
 
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
@@ -152,7 +169,15 @@ function DayCell({ day }: { day: CalendarDay }) {
  * segment lines up exactly under the days it covers -- a phase that changes
  * mid-week visibly changes mid-week.
  */
-function PhaseBarRow({ week, race }: { week: CalendarWeek; race: CalendarRaceSummary }) {
+function PhaseBarRow({
+  week,
+  race,
+  isCurrentWeek,
+}: {
+  week: CalendarWeek;
+  race: CalendarRaceSummary;
+  isCurrentWeek: boolean;
+}) {
   const segments = week.phaseSegments.filter((s) => s.planId === race.planId);
 
   return (
@@ -163,7 +188,8 @@ function PhaseBarRow({ week, race }: { week: CalendarWeek; race: CalendarRaceSum
       {segments.map((segment) => {
         const style = PHASE_STYLES[segment.phase] ?? {
           label: segment.phase,
-          className: "bg-surface-muted text-muted-foreground",
+          solid: "bg-surface-muted text-muted-foreground",
+          tinted: "bg-surface-muted text-muted-foreground",
         };
         // A segment starting the week has nothing to interlock with on its
         // left, so it gets a flat edge instead of a notch.
@@ -177,7 +203,9 @@ function PhaseBarRow({ week, race }: { week: CalendarWeek; race: CalendarRaceSum
               paddingLeft: startsWeek ? 8 : ARROW_W + 4,
               paddingRight: ARROW_W + 4,
             }}
-            className={`flex items-center justify-center overflow-hidden ${style.className}`}
+            className={`flex items-center justify-center overflow-hidden ${
+              isCurrentWeek ? style.solid : style.tinted
+            }`}
             title={`${style.label} — ${race.raceName}`}
           >
             <span className="truncate text-[11px] font-semibold uppercase tracking-wide leading-none">
@@ -311,7 +339,12 @@ export function CalendarWeekScroller({
                 </div>
                 <div className="bg-surface-muted/40" style={{ paddingTop: PHASE_STRIP_PAD_TOP }}>
                   {races.map((race) => (
-                    <PhaseBarRow key={race.planId} week={week} race={race} />
+                    <PhaseBarRow
+                      key={race.planId}
+                      week={week}
+                      race={race}
+                      isCurrentWeek={week.days.some((d) => d.isToday)}
+                    />
                   ))}
                 </div>
               </div>
