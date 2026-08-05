@@ -33,10 +33,12 @@ export default async function DashboardPage() {
 
   const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || "there";
 
+  // Soonest race day, not most-recently-created -- with several races on the
+  // calendar at once, "your next race" is the one actually coming up next.
   const activePlan = await prisma.trainingPlan.findFirst({
     where: { userId: user.id, status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
-    include: { plannedWorkouts: true },
+    orderBy: { raceDate: "asc" },
+    include: { plannedWorkouts: true, race: true },
   });
 
   const activePlanCount = await prisma.trainingPlan.count({ where: { userId: user.id, status: "ACTIVE" } });
@@ -87,25 +89,26 @@ export default async function DashboardPage() {
         {activePlan ? (
           <div className="flex flex-1 min-w-64 max-w-sm flex-col gap-3 rounded-xl border border-border bg-surface p-4">
             <div className="flex items-start justify-between gap-2">
-              <Link href={`/plan/${activePlan.id}`} className="flex flex-col gap-0.5 hover:text-accent">
+              <Link href={`/races/${activePlan.id}`} className="flex flex-col gap-0.5 hover:text-accent">
                 <span className="text-xs font-medium text-muted-foreground">
-                  {activePlanCount > 1 ? "Most recent plan" : "Active plan"}
+                  {activePlanCount > 1 ? "Next race" : "Your race"}
                 </span>
                 <span className="text-lg font-semibold">
-                  {DISTANCE_LABELS[activePlan.raceDistance as RaceDistance]}
+                  {activePlan.race?.name ?? DISTANCE_LABELS[activePlan.raceDistance as RaceDistance]}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  Race day {activePlan.raceDate.toLocaleDateString(undefined, { dateStyle: "long", timeZone: "UTC" })}
+                  {DISTANCE_LABELS[activePlan.raceDistance as RaceDistance]} &middot;{" "}
+                  {activePlan.raceDate.toLocaleDateString(undefined, { dateStyle: "long", timeZone: "UTC" })}
                 </span>
               </Link>
               <div className="flex flex-col items-end gap-1">
                 {activePlanCount > 1 && (
-                  <Link href="/plan" className="text-xs font-medium text-accent underline">
-                    View all {activePlanCount} plans
+                  <Link href="/races" className="text-xs font-medium text-accent underline">
+                    View all {activePlanCount} races
                   </Link>
                 )}
-                <Link href="/plan/new" className="text-xs font-medium text-muted-foreground underline hover:text-foreground">
-                  Start a new plan
+                <Link href="/races/new" className="text-xs font-medium text-muted-foreground underline hover:text-foreground">
+                  Add a race
                 </Link>
               </div>
             </div>
@@ -119,10 +122,10 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <Link
-            href="/plan/new"
+            href="/races/new"
             className="flex items-center justify-center rounded-full bg-accent px-5 py-3 text-base font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
           >
-            Set up a training plan
+            Add your first race
           </Link>
         )}
       </div>
@@ -136,7 +139,7 @@ export default async function DashboardPage() {
         <StatTile
           label="Adherence"
           value={overallAdherencePct !== null ? `${Math.round(overallAdherencePct)}%` : "—"}
-          subtitle={activePlan ? `last ${STATS_WEEKS_BACK} weeks` : "no active plan"}
+          subtitle={activePlan ? `last ${STATS_WEEKS_BACK} weeks` : "no race scheduled"}
         />
         <StatTile
           label="Days to race"

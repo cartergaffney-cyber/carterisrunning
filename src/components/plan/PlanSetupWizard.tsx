@@ -111,15 +111,15 @@ export function PlanSetupWizard() {
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        setError(typeof body.error === "string" ? body.error : "Failed to create plan.");
+        setError(typeof body.error === "string" ? body.error : "Failed to add race.");
         setSubmitting(false);
         return;
       }
 
       const { id } = await response.json();
-      router.push(`/plan/${id}`);
+      router.push(`/races/${id}`);
     } catch {
-      setError("Failed to create plan.");
+      setError("Failed to add race.");
       setSubmitting(false);
     }
   }
@@ -245,7 +245,7 @@ export function PlanSetupWizard() {
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <Button type="submit" disabled={submitting} className="w-full py-3 text-base">
-          {submitting ? "Generating plan…" : "Generate plan"}
+          {submitting ? "Building your schedule…" : "Add race & build schedule"}
         </Button>
       </form>
     </Card>

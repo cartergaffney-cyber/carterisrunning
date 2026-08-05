@@ -68,7 +68,7 @@ export function PlanTile({
           </div>
         </button>
         <div className="flex shrink-0 items-center gap-3">
-          <Link href={`/plan/${planId}`} className="text-xs font-medium text-muted-foreground underline hover:text-foreground">
+          <Link href={`/races/${planId}`} className="text-xs font-medium text-muted-foreground underline hover:text-foreground">
             Open
           </Link>
           <button

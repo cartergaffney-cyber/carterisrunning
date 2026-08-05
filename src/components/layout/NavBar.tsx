@@ -11,7 +11,8 @@ export async function NavBar() {
 
   const navLinks = [
     { href: "/dashboard", label: "Dashboard" },
-    { href: "/plan", label: "Plans" },
+    { href: "/calendar", label: "Calendar" },
+    { href: "/races", label: "Races" },
     { href: "/runs", label: "Runs" },
     { href: "/clubs", label: "Clubs" },
     { href: "/messages", label: "Messages", badge: unreadCount },
