@@ -3,9 +3,15 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
-const updateStatusSchema = z.object({
-  status: z.enum(["ACTIVE", "ARCHIVED"]),
-});
+// Both fields optional so a caller can change either independently.
+const updatePlanSchema = z
+  .object({
+    status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
+    priority: z.enum(["A", "B", "C"]).optional(),
+  })
+  .refine((v) => v.status !== undefined || v.priority !== undefined, {
+    message: "Provide status or priority",
+  });
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -46,15 +52,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const body = await request.json();
-  const parsed = updateStatusSchema.safeParse(body);
+  const parsed = updatePlanSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
   const updated = await prisma.trainingPlan.update({
     where: { id },
-    data: { status: parsed.data.status },
+    data: parsed.data,
   });
 
-  return NextResponse.json({ id: updated.id, status: updated.status });
+  return NextResponse.json({ id: updated.id, status: updated.status, priority: updated.priority });
 }

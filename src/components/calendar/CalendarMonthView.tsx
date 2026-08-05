@@ -53,12 +53,24 @@ function DayCell({ day }: { day: CalendarDay }) {
         <Link
           key={race.planId}
           href={`/races/${race.planId}`}
-          className="flex flex-col rounded bg-orange-100 px-1.5 py-1 text-[11px] leading-tight text-orange-900 dark:bg-orange-950 dark:text-orange-200"
+          className={`flex flex-col rounded px-1.5 py-1 text-[11px] leading-tight ${
+            race.isBackboneRace
+              ? "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-200"
+              : "border border-orange-300 text-orange-800 dark:border-orange-800 dark:text-orange-300"
+          }`}
         >
-          <span className="font-semibold uppercase tracking-wide">Race day</span>
+          <span className="font-semibold uppercase tracking-wide">
+            {race.isBackboneRace ? "Race day" : `${race.priority} race`}
+          </span>
           <span className="truncate">{race.raceName}</span>
         </Link>
       ))}
+
+      {day.adjustment && (
+        <span className="truncate text-[10px] leading-tight text-sky-700 dark:text-sky-400" title={day.adjustment.note}>
+          {day.adjustment.kind === "SHARPEN" ? "↓ eased" : "↺ recovery"}
+        </span>
+      )}
 
       {workout && (
         <Link

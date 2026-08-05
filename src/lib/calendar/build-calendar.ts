@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/db";
-import { today } from "@/lib/utils/date";
-import { DISTANCE_LABELS } from "@/lib/plan-generator";
+import { addDays, today } from "@/lib/utils/date";
+import { DISTANCE_LABELS, DISTANCE_MILES } from "@/lib/plan-generator";
 import type { RaceDistance } from "@/lib/plan-generator";
+import type { RacePriority } from "@/generated/prisma/client";
 
 /**
- * A single planned session on the unified calendar, already resolved to one
- * governing race (see resolveGoverningPlanId).
+ * A single planned session on the unified calendar, resolved against the
+ * backbone plan (see resolveBackbonePlanId).
  */
 export interface CalendarWorkout {
   workoutId: string;
@@ -17,14 +18,20 @@ export interface CalendarWorkout {
   completed: boolean;
   clubSuggestionReason: string | null;
   hasRoute: boolean;
+  /** Set when an interim race caused this session to be eased off. */
+  easedFor: string | null;
 }
 
-/** A race day landing on this calendar date. */
 export interface CalendarRaceDay {
   planId: string;
   raceName: string;
   raceDistanceLabel: string;
+  priority: RacePriority;
+  /** False when this race is an interim effort inside another race's build. */
+  isBackboneRace: boolean;
 }
+
+export type DayAdjustment = { kind: "SHARPEN" | "RECOVER"; raceName: string; note: string };
 
 export interface CalendarDay {
   date: Date;
@@ -32,34 +39,69 @@ export interface CalendarDay {
   isToday: boolean;
   raceDays: CalendarRaceDay[];
   workout: CalendarWorkout | null;
-  /**
-   * Same-day sessions from races that aren't governing this date. Surfaced
-   * rather than silently dropped -- the user should be able to see that a
-   * second race's plan wanted something else here.
-   */
+  /** Sessions from non-backbone races, kept visible rather than dropped. */
   deferredWorkouts: CalendarWorkout[];
-  /** Governing plan runs on this date and deliberately scheduled nothing. */
   isRestDay: boolean;
+  adjustment: DayAdjustment | null;
   actualMiles: number | null;
+}
+
+export interface CalendarRaceSummary {
+  planId: string;
+  raceName: string;
+  raceDate: Date;
+  raceDistanceLabel: string;
+  priority: RacePriority;
 }
 
 export interface CalendarMonth {
   year: number;
   month: number; // 0-indexed, matching Date.getUTCMonth()
   days: CalendarDay[];
-  races: { planId: string; raceName: string; raceDate: Date; raceDistanceLabel: string }[];
-  /** True when >1 active race overlaps this month, i.e. the merge rule actually did something. */
-  hasOverlap: boolean;
+  races: CalendarRaceSummary[];
+  /** True when an interim race reshaped days in this month. */
+  hasInterimAdjustments: boolean;
 }
 
 const UNSCHEDULED_TYPES = new Set<string>(["REST"]);
+const HARD_WORKOUT_TYPES = new Set<string>([
+  "INTERVAL",
+  "TEMPO",
+  "RACE_PACE",
+  "LONG_RUN",
+  "BACK_TO_BACK_LONG",
+]);
+
+const PRIORITY_RANK: Record<RacePriority, number> = { A: 0, B: 1, C: 2 };
 
 /**
- * Builds the Sunday-aligned grid covering a month, padded out to whole
- * weeks. UTC-anchored throughout, matching this app's calendar-date
- * convention (see utils/date.ts) -- an ambient-local grid would shift days
- * depending on the server's timezone.
+ * How much an interim race bends the goal race's build around it. These are
+ * hand-tuned coaching judgment calls, not physiological constants -- the
+ * same posture as pace-multipliers.ts.
+ *
+ * The shape follows standard A/B/C race practice: a B race earns a genuine
+ * mini-taper because you want to run it well, while a C race is trained
+ * through -- it replaces a hard session rather than displacing the week
+ * around it. Neither one is allowed to reshape the block the way a goal
+ * race's own taper does.
  */
+const INTERIM_ADJUSTMENT: Record<RacePriority, { sharpenDaysBefore: number; recoverDaysAfterBase: number }> = {
+  A: { sharpenDaysBefore: 0, recoverDaysAfterBase: 0 }, // an A race is the backbone; its own plan tapers it
+  B: { sharpenDaysBefore: 3, recoverDaysAfterBase: 2 },
+  C: { sharpenDaysBefore: 1, recoverDaysAfterBase: 1 },
+};
+
+/**
+ * Recovery scales with how far you actually raced -- a 5K tune-up costs a
+ * day, a half costs most of a week. Roughly a third of the classic "one
+ * easy day per mile raced" guidance, which is calibrated for a full return
+ * to hard training rather than for staying inside an ongoing build.
+ */
+function recoveryDaysFor(priority: RacePriority, raceDistance: RaceDistance): number {
+  const miles = DISTANCE_MILES[raceDistance] ?? 0;
+  return INTERIM_ADJUSTMENT[priority].recoverDaysAfterBase + Math.round(miles / 6);
+}
+
 function buildMonthGrid(year: number, month: number): { date: Date; inMonth: boolean }[] {
   const firstOfMonth = new Date(Date.UTC(year, month, 1));
   const leadingBlanks = firstOfMonth.getUTCDay();
@@ -76,26 +118,38 @@ function dateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+interface PlanMeta {
+  planId: string;
+  raceDate: Date;
+  raceName: string;
+  raceDistance: RaceDistance;
+  raceDistanceLabel: string;
+  priority: RacePriority;
+}
+
 /**
- * Decides which race's plan governs a given date when several are active.
+ * Picks the plan whose build drives a given date.
  *
- * The rule is deliberately simple and explainable: whichever race is
- * happening soonest *on or after* that date owns it. That mirrors how
- * multi-race calendars actually work -- you follow one plan at a time, and
- * once a race passes, the next one takes over the schedule. It's also why
- * two full plans never silently stack a long run and an interval session
- * onto the same day.
+ * Priority wins, not proximity. A goal (A) race keeps owning the schedule
+ * even when a B or C race sits closer -- that's the whole point of running
+ * a tune-up inside a build, and letting the nearer race take over is how
+ * you end up tapering away a marathon block for a 5K. Among races of equal
+ * priority the soonest one governs, since you can't train past a race you
+ * haven't run yet.
  *
- * Known simplification: a near-term short race will govern (and taper) even
- * while a much bigger race sits further out, which can under-serve the far
- * race's base building. The deferred-session list is what keeps that
- * visible instead of hidden.
+ * Races already run are excluded, so the calendar hands off cleanly to the
+ * next goal race the day after a race day.
  */
-function resolveGoverningPlanId(date: Date, plansByRaceDate: { planId: string; raceDate: Date }[]): string | null {
-  const upcoming = plansByRaceDate.find((p) => p.raceDate.getTime() >= date.getTime());
-  // Past every race day -- fall back to the last race so trailing days still
-  // render with their own plan rather than going blank.
-  return upcoming?.planId ?? plansByRaceDate[plansByRaceDate.length - 1]?.planId ?? null;
+function resolveBackbonePlanId(date: Date, plans: PlanMeta[]): string | null {
+  const remaining = plans.filter((p) => p.raceDate.getTime() >= date.getTime());
+  const pool = remaining.length > 0 ? remaining : plans;
+  if (pool.length === 0) return null;
+
+  return [...pool].sort((a, b) => {
+    const byPriority = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
+    if (byPriority !== 0) return byPriority;
+    return a.raceDate.getTime() - b.raceDate.getTime();
+  })[0].planId;
 }
 
 export async function buildCalendarMonth(userId: string, year: number, month: number): Promise<CalendarMonth> {
@@ -115,22 +169,18 @@ export async function buildCalendarMonth(userId: string, year: number, month: nu
     },
   });
 
-  const planMeta = plans.map((p) => ({
+  const planMeta: PlanMeta[] = plans.map((p) => ({
     planId: p.id,
     raceDate: p.raceDate,
-    raceName: p.race?.name ?? DISTANCE_LABELS[p.raceDistance as RaceDistance],
+    raceName: p.race?.commonName ?? p.race?.name ?? DISTANCE_LABELS[p.raceDistance as RaceDistance],
+    raceDistance: p.raceDistance as RaceDistance,
     raceDistanceLabel: DISTANCE_LABELS[p.raceDistance as RaceDistance],
+    priority: p.priority,
   }));
 
-  // date -> all candidate sessions from every active race
   const byDate = new Map<string, CalendarWorkout[]>();
   const raceDaysByDate = new Map<string, CalendarRaceDay[]>();
   const actualByDate = new Map<string, number>();
-  // Every date each plan schedules *anything* on, rest days included. Without
-  // this, "the governing plan prescribes rest here" is indistinguishable from
-  // "the governing plan doesn't run on this date at all" -- and conflating
-  // the two silently fills prescribed rest days with the other race's
-  // sessions, which is how you end up training 7 days a week across two plans.
   const coveredDatesByPlan = new Map<string, Set<string>>();
 
   for (const plan of plans) {
@@ -148,7 +198,13 @@ export async function buildCalendarMonth(userId: string, year: number, month: nu
 
       if (workout.workoutType === "RACE") {
         const existing = raceDaysByDate.get(key) ?? [];
-        existing.push({ planId: plan.id, raceName: meta.raceName, raceDistanceLabel: meta.raceDistanceLabel });
+        existing.push({
+          planId: plan.id,
+          raceName: meta.raceName,
+          raceDistanceLabel: meta.raceDistanceLabel,
+          priority: meta.priority,
+          isBackboneRace: resolveBackbonePlanId(workout.date, planMeta) === plan.id,
+        });
         raceDaysByDate.set(key, existing);
         continue;
       }
@@ -165,6 +221,7 @@ export async function buildCalendarMonth(userId: string, year: number, month: nu
         completed: workout.completed,
         clubSuggestionReason: workout.clubSuggestion?.matchReason ?? null,
         hasRoute: !!workout.generatedRoute,
+        easedFor: null,
       };
 
       const existing = byDate.get(key) ?? [];
@@ -173,33 +230,70 @@ export async function buildCalendarMonth(userId: string, year: number, month: nu
     }
   }
 
+  // Every interim race (one that isn't the backbone on its own race day)
+  // projects a sharpen window before it and a recovery window after, so the
+  // goal-race build bends around it instead of ignoring it.
+  const adjustmentByDate = new Map<string, DayAdjustment>();
+  for (const meta of planMeta) {
+    const isBackboneOnOwnRaceDay = resolveBackbonePlanId(meta.raceDate, planMeta) === meta.planId;
+    if (isBackboneOnOwnRaceDay) continue;
+
+    const { sharpenDaysBefore } = INTERIM_ADJUSTMENT[meta.priority];
+    const recoverDays = recoveryDaysFor(meta.priority, meta.raceDistance);
+
+    for (let i = 1; i <= sharpenDaysBefore; i++) {
+      adjustmentByDate.set(dateKey(addDays(meta.raceDate, -i)), {
+        kind: "SHARPEN",
+        raceName: meta.raceName,
+        note: `Eased ahead of ${meta.raceName}`,
+      });
+    }
+    for (let i = 1; i <= recoverDays; i++) {
+      adjustmentByDate.set(dateKey(addDays(meta.raceDate, i)), {
+        kind: "RECOVER",
+        raceName: meta.raceName,
+        note: `Recovery after ${meta.raceName}`,
+      });
+    }
+  }
+
   const todayKey = dateKey(today());
-  let hasOverlap = false;
+  let hasInterimAdjustments = false;
 
   const days: CalendarDay[] = grid.map(({ date, inMonth }) => {
     const key = dateKey(date);
     const candidates = byDate.get(key) ?? [];
-    const governingPlanId = resolveGoverningPlanId(date, planMeta);
+    const backbonePlanId = resolveBackbonePlanId(date, planMeta);
+    const raceDays = raceDaysByDate.get(key) ?? [];
 
     let workout: CalendarWorkout | null = null;
     const deferredWorkouts: CalendarWorkout[] = [];
 
     for (const candidate of candidates) {
-      if (candidate.planId === governingPlanId && !workout) workout = candidate;
+      if (candidate.planId === backbonePlanId && !workout) workout = candidate;
       else deferredWorkouts.push(candidate);
     }
 
-    const raceDays = raceDaysByDate.get(key) ?? [];
-    const governingCoversDate = governingPlanId ? (coveredDatesByPlan.get(governingPlanId)?.has(key) ?? false) : false;
-    // A governing plan that covers this date but scheduled no session is
-    // prescribing rest -- that stands. Only promote another race's session
-    // when the governing plan genuinely isn't running yet (or has finished).
-    // Race days suppress promotion outright: nothing else belongs on one.
-    const isRestDay = governingCoversDate && !workout;
-    if (!workout && !governingCoversDate && raceDays.length === 0 && deferredWorkouts.length > 0) {
+    const backboneCoversDate = backbonePlanId
+      ? (coveredDatesByPlan.get(backbonePlanId)?.has(key) ?? false)
+      : false;
+    const isRestDay = backboneCoversDate && !workout;
+
+    // Only borrow another race's session when the backbone genuinely isn't
+    // running this date -- a prescribed rest day stands, and nothing gets
+    // stacked onto a race day.
+    if (!workout && !backboneCoversDate && raceDays.length === 0 && deferredWorkouts.length > 0) {
       workout = deferredWorkouts.shift()!;
     }
-    if (deferredWorkouts.length > 0 && inMonth) hasOverlap = true;
+
+    // Inside an interim race's sharpen/recovery window the backbone's hard
+    // sessions get eased rather than run as written -- racing hard two days
+    // after a tempo is how a tune-up turns into an injury.
+    const adjustment = adjustmentByDate.get(key) ?? null;
+    if (adjustment && workout && HARD_WORKOUT_TYPES.has(workout.workoutType)) {
+      workout = { ...workout, workoutType: "EASY", easedFor: adjustment.raceName };
+    }
+    if (adjustment && inMonth) hasInterimAdjustments = true;
 
     return {
       date,
@@ -209,6 +303,7 @@ export async function buildCalendarMonth(userId: string, year: number, month: nu
       workout,
       deferredWorkouts,
       isRestDay,
+      adjustment,
       actualMiles: actualByDate.get(key) ?? null,
     };
   });
@@ -222,7 +317,8 @@ export async function buildCalendarMonth(userId: string, year: number, month: nu
       raceName: m.raceName,
       raceDate: m.raceDate,
       raceDistanceLabel: m.raceDistanceLabel,
+      priority: m.priority,
     })),
-    hasOverlap,
+    hasInterimAdjustments,
   };
 }

@@ -60,6 +60,7 @@ export default async function RacesIndexPage() {
               raceDate={plan.raceDate}
               totalWeeks={plan.totalWeeks}
               daysToRace={diffInDays(today(), plan.raceDate)}
+              priority={plan.priority}
               race={
                 plan.race
                   ? {

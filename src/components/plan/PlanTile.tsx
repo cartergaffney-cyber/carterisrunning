@@ -23,10 +23,17 @@ interface PlanTileProps {
   raceDate: Date;
   totalWeeks: number;
   daysToRace: number;
+  priority: "A" | "B" | "C";
   race: PlanTileRace | null;
   defaultExpanded: boolean;
   weeks: WeekData[];
 }
+
+const PRIORITY_OPTIONS: { value: "A" | "B" | "C"; label: string; hint: string }[] = [
+  { value: "A", label: "A — Goal race", hint: "Drives the calendar. Full taper, everything else works around it." },
+  { value: "B", label: "B — Secondary", hint: "Race it well: a few easier days before, a short recovery after." },
+  { value: "C", label: "C — Tune-up", hint: "Train through it. Replaces a hard session, minimal disruption." },
+];
 
 const TERRAIN_LABELS: Record<string, string> = { ROAD: "Road", TRAIL: "Trail", MIXED: "Mixed" };
 
@@ -37,13 +44,39 @@ export function PlanTile({
   raceDate,
   totalWeeks,
   daysToRace,
+  priority,
   race,
   defaultExpanded,
   weeks,
 }: PlanTileProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [archiving, setArchiving] = useState(false);
+  const [currentPriority, setCurrentPriority] = useState(priority);
+  const [savingPriority, setSavingPriority] = useState(false);
   const router = useRouter();
+
+  async function handlePriorityChange(next: "A" | "B" | "C") {
+    const previous = currentPriority;
+    setCurrentPriority(next);
+    setSavingPriority(true);
+    try {
+      const response = await fetch(`/api/plans/${planId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority: next }),
+      });
+      if (!response.ok) {
+        setCurrentPriority(previous);
+        return;
+      }
+      // The calendar's whole shape depends on this, so pull fresh data.
+      router.refresh();
+    } catch {
+      setCurrentPriority(previous);
+    } finally {
+      setSavingPriority(false);
+    }
+  }
 
   async function handleArchive() {
     if (!confirm(`Archive "${title}"? It'll stop showing here, but nothing is deleted.`)) return;
@@ -113,6 +146,22 @@ export function PlanTile({
           </div>
         </button>
         <div className="flex shrink-0 items-center gap-3">
+          <label className="flex items-center gap-1.5">
+            <span className="sr-only">Race priority</span>
+            <select
+              value={currentPriority}
+              disabled={savingPriority}
+              onChange={(e) => handlePriorityChange(e.target.value as "A" | "B" | "C")}
+              title={PRIORITY_OPTIONS.find((o) => o.value === currentPriority)?.hint}
+              className="rounded-full border border-border bg-surface px-2 py-1 text-xs font-medium disabled:opacity-50"
+            >
+              {PRIORITY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
           {race?.websiteUrl && (
             <a
               href={race.websiteUrl}

@@ -89,6 +89,15 @@ export default async function CalendarPage({
                 href={`/races/${race.planId}`}
                 className="flex items-baseline gap-2 rounded-full border border-border px-3 py-1.5 text-xs transition-colors hover:border-accent"
               >
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                    race.priority === "A"
+                      ? "bg-accent/15 text-accent"
+                      : "bg-surface-muted text-muted-foreground"
+                  }`}
+                >
+                  {race.priority}
+                </span>
                 <span className="font-semibold">{race.raceName}</span>
                 <span className="text-muted-foreground">
                   {race.raceDistanceLabel} &middot;{" "}
@@ -98,12 +107,17 @@ export default async function CalendarPage({
             ))}
           </div>
 
-          {calendar.hasOverlap && (
+          {calendar.hasInterimAdjustments && (
             <p className="rounded-lg border border-border bg-surface p-3 text-xs text-muted-foreground">
-              Two races want a session on the same day this month. Your <strong>next</strong> race
-              drives the schedule &mdash; the other race&rsquo;s session is marked{" "}
-              <span className="rounded border border-dashed border-border px-1">deferred</span> rather
-              than stacked on top, since doing both would double up a hard day.
+              Your <strong>A race</strong> build stays the backbone this month. A shorter race inside
+              it doesn&rsquo;t take the schedule over &mdash; it gets absorbed: hard sessions are{" "}
+              <span className="text-sky-700 dark:text-sky-400">eased</span> going into it and{" "}
+              <span className="text-sky-700 dark:text-sky-400">recovery</span> follows it, scaled to
+              how far you raced. Set each race&rsquo;s priority on the{" "}
+              <Link href="/races" className="text-accent underline">
+                Races page
+              </Link>
+              .
             </p>
           )}
 

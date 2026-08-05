@@ -21,6 +21,12 @@ enum RaceDistance {
   HUNDRED_MILE
 }
 
+enum RacePriority {
+  A // Goal race -- its build is the backbone of the calendar
+  B // Secondary -- race it well, but do not reshape the whole block
+  C // Tune-up -- train through it, it serves the goal race
+}
+
 enum PlanStatus {
   ACTIVE
   COMPLETED
@@ -143,6 +149,7 @@ model TrainingPlan {
   raceId                    String?
   race                      Race?            @relation(fields: [raceId], references: [id])
   raceDistance              RaceDistance
+  priority                  RacePriority     @default(A)
   raceDate                  DateTime
   startDate                 DateTime
   currentWeeklyMileageMiles Float
