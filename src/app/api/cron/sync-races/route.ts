@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { syncRunSignupRaces, prunePastSyncedRaces } from "@/lib/race-catalog/runsignup-sync";
 import { discoverNewFindARaceEvents } from "@/lib/race-catalog/findarace-sync";
 import { enrichRacesMissingWebsite } from "@/lib/race-catalog/enrich-race";
+import { backfillMissingLogos } from "@/lib/race-catalog/logo-lookup";
 import { addDays, today } from "@/lib/utils/date";
 
 const NEAR_TERM_DAYS = 60;
@@ -36,6 +37,7 @@ export async function GET(request: NextRequest) {
   let farMonth: { upserted: number; skippedNoDate: number } | null = null;
   let findARaceDiscovery: Awaited<ReturnType<typeof discoverNewFindARaceEvents>> | null = null;
   let findARaceEnrichment: Awaited<ReturnType<typeof enrichRacesMissingWebsite>> | null = null;
+  let logoBackfill: Awaited<ReturnType<typeof backfillMissingLogos>> | null = null;
 
   if (now.getUTCDate() === 1) {
     farMonth = await syncRunSignupRaces({
@@ -50,9 +52,15 @@ export async function GET(request: NextRequest) {
     // near-term refresh above does.
     findARaceDiscovery = await discoverNewFindARaceEvents();
     findARaceEnrichment = await enrichRacesMissingWebsite();
+
+    // Newly-discovered races only just got a websiteUrl above, so this is
+    // the first point at which their logo can be looked up. Re-runnable by
+    // design: rows whose site declares no icon stay null and are simply
+    // retried next month.
+    logoBackfill = await backfillMissingLogos();
   }
 
   const pruned = await prunePastSyncedRaces();
 
-  return NextResponse.json({ nearTerm, farMonth, findARaceDiscovery, findARaceEnrichment, pruned });
+  return NextResponse.json({ nearTerm, farMonth, findARaceDiscovery, findARaceEnrichment, logoBackfill, pruned });
 }

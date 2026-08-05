@@ -43,6 +43,7 @@ export const createRaceSchema = z.object({
   elevationGainMeters: z.number().nonnegative().optional(),
   courseUrl: z.string().url().optional(),
   sourceUrl: z.string().url().optional(),
+  websiteUrl: z.string().url().optional(),
 });
 
 export type CreateRaceInput = z.infer<typeof createRaceSchema>;
