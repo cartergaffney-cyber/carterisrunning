@@ -117,7 +117,11 @@ export default async function CalendarPage({
             </p>
           )}
 
-          <CalendarWeekScroller weeks={calendar.weeks} initialWeekIndex={initialWeekIndex} />
+          <CalendarWeekScroller
+            weeks={calendar.weeks}
+            races={calendar.races}
+            initialWeekIndex={initialWeekIndex}
+          />
         </>
       )}
     </div>

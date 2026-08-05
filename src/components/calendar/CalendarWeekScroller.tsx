@@ -4,14 +4,38 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { WORKOUT_TYPE_LABELS } from "@/lib/plan-generator/labels";
 import type { WorkoutType } from "@/lib/plan-generator/types";
-import type { CalendarDay, CalendarWeek } from "@/lib/calendar/build-calendar";
+import type { CalendarDay, CalendarRaceSummary, CalendarWeek } from "@/lib/calendar/build-calendar";
 
 const WEEKDAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// Height of one week row. The scroll viewport is exactly two of these, so a
-// week is always the unit you move by -- see the scroll-snap setup below.
-const WEEK_ROW_HEIGHT = 236;
+const DAY_CELL_HEIGHT = 220;
+const PHASE_BAR_HEIGHT = 22;
 const VISIBLE_WEEKS = 2;
+
+/**
+ * Phases run BASE -> BUILD -> PEAK -> TAPER, so the colours read as a heat
+ * ramp that cools at the end: green while you're laying aerobic foundation,
+ * amber as intensity climbs, red at peak load, then blue for the taper --
+ * the one phase where doing less is the point.
+ */
+const PHASE_STYLES: Record<string, { label: string; className: string }> = {
+  BASE: {
+    label: "Aerobic Base",
+    className: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30",
+  },
+  BUILD: {
+    label: "Build",
+    className: "bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30",
+  },
+  PEAK: {
+    label: "Peak",
+    className: "bg-red-500/15 text-red-800 dark:text-red-300 border-red-500/30",
+  },
+  TAPER: {
+    label: "Taper",
+    className: "bg-indigo-500/15 text-indigo-800 dark:text-indigo-300 border-indigo-500/30",
+  },
+};
 
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
   EASY: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
@@ -120,10 +144,55 @@ function DayCell({ day }: { day: CalendarDay }) {
   );
 }
 
-export function CalendarWeekScroller({ weeks, initialWeekIndex }: { weeks: CalendarWeek[]; initialWeekIndex: number }) {
+/**
+ * One race's phase bar for a single week. Rendered on the 7-column grid so a
+ * segment lines up exactly under the days it covers -- a phase that changes
+ * mid-week visibly changes mid-week.
+ */
+function PhaseBarRow({ week, race }: { week: CalendarWeek; race: CalendarRaceSummary }) {
+  const segments = week.phaseSegments.filter((s) => s.planId === race.planId);
+
+  return (
+    <div className="grid grid-cols-7" style={{ height: PHASE_BAR_HEIGHT }}>
+      {segments.map((segment) => {
+        const style = PHASE_STYLES[segment.phase] ?? {
+          label: segment.phase,
+          className: "bg-surface-muted text-muted-foreground border-border",
+        };
+        return (
+          <div
+            key={`${segment.planId}-${segment.startIndex}`}
+            style={{ gridColumn: `${segment.startIndex + 1} / span ${segment.span}` }}
+            className={`flex items-center overflow-hidden border-l-2 px-2 ${style.className}`}
+            title={`${style.label} — ${race.raceName}`}
+          >
+            <span className="truncate text-[11px] font-semibold leading-none">
+              {style.label}
+              <span className="ml-1.5 font-normal opacity-75">{race.raceName}</span>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function CalendarWeekScroller({
+  weeks,
+  races,
+  initialWeekIndex,
+}: {
+  weeks: CalendarWeek[];
+  races: CalendarRaceSummary[];
+  initialWeekIndex: number;
+}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [topWeek, setTopWeek] = useState(initialWeekIndex);
 
+  // Every week reserves a bar slot per race, even when that race has no
+  // segments there, so all week rows stay the same height -- scroll snapping
+  // depends on a single fixed row height.
+  const WEEK_ROW_HEIGHT = DAY_CELL_HEIGHT + races.length * PHASE_BAR_HEIGHT;
   const maxIndex = Math.max(0, weeks.length - VISIBLE_WEEKS);
 
   const scrollToWeek = useCallback(
@@ -217,10 +286,15 @@ export function CalendarWeekScroller({ weeks, initialWeekIndex }: { weeks: Calen
               <div
                 key={week.weekStart.toISOString()}
                 style={{ height: WEEK_ROW_HEIGHT, scrollSnapAlign: "start" }}
-                className="grid grid-cols-7 border-b border-border last:border-b-0"
+                className="flex flex-col border-b border-border last:border-b-0"
               >
-                {week.days.map((day) => (
-                  <DayCell key={day.date.toISOString()} day={day} />
+                <div className="grid grid-cols-7" style={{ height: DAY_CELL_HEIGHT }}>
+                  {week.days.map((day) => (
+                    <DayCell key={day.date.toISOString()} day={day} />
+                  ))}
+                </div>
+                {races.map((race) => (
+                  <PhaseBarRow key={race.planId} week={week} race={race} />
                 ))}
               </div>
             ))}

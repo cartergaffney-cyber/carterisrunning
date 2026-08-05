@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { addDays, today } from "@/lib/utils/date";
 import { DISTANCE_LABELS, DISTANCE_MILES } from "@/lib/plan-generator";
 import type { RaceDistance } from "@/lib/plan-generator";
-import type { RacePriority } from "@/generated/prisma/client";
+import type { RacePriority, TrainingPhase } from "@/generated/prisma/client";
 
 /**
  * A single planned session on the unified calendar, resolved against the
@@ -53,9 +53,26 @@ export interface CalendarRaceSummary {
   priority: RacePriority;
 }
 
+/**
+ * One race's training phase across a contiguous stretch of a single week.
+ * A week yields more than one segment per race when a phase changes
+ * mid-week, which is common -- phase boundaries don't respect weekends.
+ */
+export interface WeekPhaseSegment {
+  planId: string;
+  raceName: string;
+  phase: TrainingPhase;
+  /** 0-6 index of the first day in the week this segment covers. */
+  startIndex: number;
+  /** Number of days covered, 1-7. */
+  span: number;
+}
+
 export interface CalendarWeek {
   weekStart: Date;
   days: CalendarDay[];
+  /** Grouped by race, so overlapping phases stack as separate bars. */
+  phaseSegments: WeekPhaseSegment[];
 }
 
 export interface CalendarRange {
@@ -181,15 +198,22 @@ export async function buildCalendarRange(
   const raceDaysByDate = new Map<string, CalendarRaceDay[]>();
   const actualByDate = new Map<string, number>();
   const coveredDatesByPlan = new Map<string, Set<string>>();
+  // Phase is tracked for every plan, not just the backbone -- two races in
+  // different phases on the same day is the normal case, and each needs its
+  // own bar.
+  const phaseByPlanDate = new Map<string, Map<string, TrainingPhase>>();
 
   for (const plan of plans) {
     const meta = planMeta.find((m) => m.planId === plan.id)!;
     const covered = new Set<string>();
     coveredDatesByPlan.set(plan.id, covered);
+    const phases = new Map<string, TrainingPhase>();
+    phaseByPlanDate.set(plan.id, phases);
 
     for (const workout of plan.plannedWorkouts) {
       const key = dateKey(workout.date);
       covered.add(key);
+      phases.set(key, workout.phase);
 
       if (workout.run) {
         actualByDate.set(key, (actualByDate.get(key) ?? 0) + workout.run.distanceMiles);
@@ -306,10 +330,49 @@ export async function buildCalendarRange(
     };
   });
 
-  const weeks: CalendarWeek[] = Array.from({ length: weekCount }, (_, i) => ({
-    weekStart: grid[i * 7],
-    days: days.slice(i * 7, i * 7 + 7),
-  }));
+  const weeks: CalendarWeek[] = Array.from({ length: weekCount }, (_, i) => {
+    const weekDays = days.slice(i * 7, i * 7 + 7);
+    const phaseSegments: WeekPhaseSegment[] = [];
+
+    // Collapse each plan's seven days into runs of the same phase. Days the
+    // plan doesn't cover (it hasn't started, or has already raced) break a
+    // run rather than extending it, so a bar never implies training that
+    // isn't scheduled.
+    for (const meta of planMeta) {
+      const phases = phaseByPlanDate.get(meta.planId);
+      if (!phases) continue;
+
+      let runPhase: TrainingPhase | null = null;
+      let runStart = 0;
+
+      const flush = (endExclusive: number) => {
+        if (runPhase !== null) {
+          phaseSegments.push({
+            planId: meta.planId,
+            raceName: meta.raceName,
+            phase: runPhase,
+            startIndex: runStart,
+            span: endExclusive - runStart,
+          });
+        }
+        runPhase = null;
+      };
+
+      weekDays.forEach((day, index) => {
+        const phase = phases.get(dateKey(day.date)) ?? null;
+        if (phase !== runPhase) {
+          flush(index);
+          if (phase !== null) {
+            runPhase = phase;
+            runStart = index;
+          }
+        }
+      });
+      flush(weekDays.length);
+    }
+
+    return { weekStart: grid[i * 7], days: weekDays, phaseSegments };
+  });
 
   return {
     weeks,
