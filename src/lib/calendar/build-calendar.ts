@@ -33,6 +33,19 @@ export interface CalendarRaceDay {
   isBackboneRace: boolean;
 }
 
+export interface CalendarClubRun {
+  sessionId: string;
+  clubId: string;
+  clubName: string;
+  startTime: string | null;
+  sessionType: string;
+  distanceMiles: number | null;
+  meetingLocation: string | null;
+  /** True when the user actually belongs to this club on Strava. */
+  isMember: boolean;
+  distanceFromHomeMiles: number | null;
+}
+
 export type DayAdjustment = { kind: "SHARPEN" | "RECOVER"; raceName: string; note: string };
 
 export interface CalendarDay {
@@ -44,6 +57,8 @@ export interface CalendarDay {
   isRestDay: boolean;
   adjustment: DayAdjustment | null;
   actualMiles: number | null;
+  /** Local club runs that could serve this day's session. */
+  clubRuns: CalendarClubRun[];
 }
 
 export interface CalendarRaceSummary {
@@ -139,6 +154,28 @@ interface PlanMeta {
   raceDistanceLabel: string;
   priority: RacePriority;
 }
+
+/**
+ * Which club session types can stand in for a planned workout.
+ *
+ * UNKNOWN is the common case in practice -- most clubs post a run without
+ * labelling the effort -- so treating it as "no match" would hide nearly
+ * every club run there is. It's allowed to fill easy and long days, where
+ * running with a group is the whole point and the effort is forgiving. It
+ * is deliberately never offered for tempo or interval days: an unlabelled
+ * group run can't be assumed to deliver a specific prescribed effort, and
+ * showing up expecting one is how a quality session gets wrecked.
+ */
+const CLUB_SESSION_MATCHES: Record<string, string[]> = {
+  EASY: ["EASY", "SOCIAL", "UNKNOWN"],
+  LONG_RUN: ["LONG_RUN", "UNKNOWN"],
+  BACK_TO_BACK_LONG: ["LONG_RUN", "UNKNOWN"],
+  TEMPO: ["TEMPO"],
+  INTERVAL: ["INTERVAL", "TRACK"],
+};
+
+// Enough to show there's a choice without burying the day's session.
+const MAX_CLUB_RUNS_PER_DAY = 3;
 
 // Sessions whose value is time on feet -- two plans both asking for one can
 // be satisfied by running the longer of the two.
@@ -347,6 +384,40 @@ export async function buildCalendarRange(
     }
   }
 
+  // Every club the user hasn't dismissed -- the ones they've joined on
+  // Strava *and* the ones discovery turned up nearby. Suggesting a club run
+  // they haven't joined yet is the point of the feature, so membership only
+  // affects how a run is labelled and ranked, not whether it appears.
+  const clubSessions = await prisma.clubSession.findMany({
+    where: { club: { userId, status: { not: "DISMISSED" } } },
+    include: { club: true },
+  });
+
+  const clubRunsByDayOfWeek = new Map<number, CalendarClubRun[]>();
+  for (const session of clubSessions) {
+    const runs = clubRunsByDayOfWeek.get(session.dayOfWeek) ?? [];
+    runs.push({
+      sessionId: session.id,
+      clubId: session.clubId,
+      clubName: session.club.name,
+      startTime: session.startTime,
+      sessionType: session.type,
+      distanceMiles: session.distanceMiles,
+      meetingLocation: session.meetingLocation,
+      isMember: session.club.discoverySource === "STRAVA_MEMBERSHIP",
+      distanceFromHomeMiles: session.club.distanceFromHomeMiles,
+    });
+    clubRunsByDayOfWeek.set(session.dayOfWeek, runs);
+  }
+
+  // Clubs already joined first, then whichever meets closest to home.
+  for (const runs of clubRunsByDayOfWeek.values()) {
+    runs.sort((a, b) => {
+      if (a.isMember !== b.isMember) return a.isMember ? -1 : 1;
+      return (a.distanceFromHomeMiles ?? Infinity) - (b.distanceFromHomeMiles ?? Infinity);
+    });
+  }
+
   const todayKey = dateKey(today());
   let hasInterimAdjustments = false;
 
@@ -379,6 +450,15 @@ export async function buildCalendarRange(
     }
     if (adjustment) hasInterimAdjustments = true;
 
+    // Only offer club runs against a session they could actually serve --
+    // not on rest days, race days, or a day already eased for a race.
+    const compatibleTypes = workout && !workout.easedFor ? CLUB_SESSION_MATCHES[workout.workoutType] : undefined;
+    const clubRuns = compatibleTypes
+      ? (clubRunsByDayOfWeek.get(date.getUTCDay()) ?? [])
+          .filter((run) => compatibleTypes.includes(run.sessionType))
+          .slice(0, MAX_CLUB_RUNS_PER_DAY)
+      : [];
+
     return {
       date,
       isToday: key === todayKey,
@@ -387,6 +467,7 @@ export async function buildCalendarRange(
       isRestDay,
       adjustment,
       actualMiles: actualByDate.get(key) ?? null,
+      clubRuns,
     };
   });
 

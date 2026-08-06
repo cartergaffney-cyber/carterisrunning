@@ -142,14 +142,30 @@ function DayCell({ day }: { day: CalendarDay }) {
         </span>
       )}
 
-      {workout?.clubSuggestionReason && (
-        <span className="truncate text-[11px] text-violet-600 dark:text-violet-400">
-          👥 {workout.clubSuggestionReason}
-        </span>
-      )}
       {workout?.hasRoute && (
         <span className="truncate text-[11px] text-muted-foreground">🗺️ Route ready</span>
       )}
+
+      {day.clubRuns.map((run) => (
+        <Link
+          key={run.sessionId}
+          href="/clubs"
+          title={`${run.clubName}${run.startTime ? ` · ${run.startTime}` : ""}${
+            run.meetingLocation ? ` · ${run.meetingLocation}` : ""
+          }${run.isMember ? " — you're a member" : " — suggested club, not joined"}`}
+          className={`flex items-center gap-1 truncate rounded px-1.5 py-1 text-[11px] leading-tight ${
+            run.isMember
+              ? "bg-violet-100 text-violet-900 dark:bg-violet-950 dark:text-violet-200"
+              : "border border-dashed border-violet-400/70 text-violet-700 dark:border-violet-700 dark:text-violet-300"
+          }`}
+        >
+          <span aria-hidden>{run.isMember ? "👥" : "✦"}</span>
+          <span className="truncate">
+            {run.startTime && <span className="tabular-nums font-medium">{run.startTime} </span>}
+            {run.clubName}
+          </span>
+        </Link>
+      ))}
 
       {workout && workout.servesRaces.length > 1 && (
         <span
@@ -299,6 +315,21 @@ export function CalendarWeekScroller({
             ↓ Week
           </button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="rounded bg-violet-100 px-1.5 py-0.5 text-violet-900 dark:bg-violet-950 dark:text-violet-200">
+            👥 Club
+          </span>
+          you&rsquo;re a member
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="rounded border border-dashed border-violet-400/70 px-1.5 py-0.5 text-violet-700 dark:border-violet-700 dark:text-violet-300">
+            ✦ Club
+          </span>
+          nearby suggestion &mdash; not joined
+        </span>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border bg-surface">
