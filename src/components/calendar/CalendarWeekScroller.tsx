@@ -151,15 +151,14 @@ function DayCell({ day }: { day: CalendarDay }) {
         <span className="truncate text-[11px] text-muted-foreground">🗺️ Route ready</span>
       )}
 
-      {day.deferredWorkouts.map((deferred) => (
+      {workout && workout.servesRaces.length > 1 && (
         <span
-          key={deferred.workoutId}
-          title={`${deferred.raceName}: ${deferred.description}`}
-          className="truncate rounded border border-dashed border-border px-1.5 py-0.5 text-[11px] text-muted-foreground"
+          title={`One session covering: ${workout.servesRaces.join(", ")}`}
+          className="truncate text-[11px] text-muted-foreground"
         >
-          {WORKOUT_TYPE_LABELS[deferred.workoutType as WorkoutType] ?? deferred.workoutType} · deferred
+          ⇢ covers {workout.servesRaces.length} races
         </span>
-      ))}
+      )}
     </div>
   );
 }

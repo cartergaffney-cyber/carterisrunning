@@ -20,6 +20,8 @@ export interface CalendarWorkout {
   hasRoute: boolean;
   /** Set when an interim race caused this session to be eased off. */
   easedFor: string | null;
+  /** Every race this one session is doing work for, in priority order. */
+  servesRaces: string[];
 }
 
 export interface CalendarRaceDay {
@@ -37,9 +39,8 @@ export interface CalendarDay {
   date: Date;
   isToday: boolean;
   raceDays: CalendarRaceDay[];
+  /** Exactly one session per day, merged across every active race. */
   workout: CalendarWorkout | null;
-  /** Sessions from non-backbone races, kept visible rather than dropped. */
-  deferredWorkouts: CalendarWorkout[];
   isRestDay: boolean;
   adjustment: DayAdjustment | null;
   actualMiles: number | null;
@@ -137,6 +138,71 @@ interface PlanMeta {
   raceDistance: RaceDistance;
   raceDistanceLabel: string;
   priority: RacePriority;
+}
+
+// Sessions whose value is time on feet -- two plans both asking for one can
+// be satisfied by running the longer of the two.
+const VOLUME_TYPES = new Set(["EASY", "LONG_RUN", "BACK_TO_BACK_LONG"]);
+// Sessions with a specific intensity prescription. Distance here isn't a
+// dial you can turn up: stretching an interval session to a long run's
+// mileage isn't a merge, it's an injury.
+const QUALITY_TYPES = new Set(["TEMPO", "INTERVAL", "RACE_PACE"]);
+
+/**
+ * Collapses every race's ask for one day into the single session you should
+ * actually run. Never returns two workouts -- you only have one day.
+ *
+ * The backbone race's prescription is the starting point, because that's the
+ * race the whole block is built around. From there:
+ *
+ *  - Same type, another race wants it longer -> run the longer one. It
+ *    satisfies both, and the shorter ask is a strict subset.
+ *  - Backbone has an easy day, another race wants quality -> run the
+ *    quality session. An easy day is the most substitutable thing in a
+ *    week, so this is where a second race's specific work fits for free.
+ *  - Anything else -> keep the backbone's session. In particular a long run
+ *    is never traded away for another race's tempo; that's the priority
+ *    race's key session and swapping it is how a build quietly unravels.
+ */
+function mergeDaySessions(candidates: CalendarWorkout[], backbonePlanId: string | null): CalendarWorkout | null {
+  if (candidates.length === 0) return null;
+
+  const primary = candidates.find((c) => c.planId === backbonePlanId) ?? candidates[0];
+  const others = candidates.filter((c) => c !== primary);
+  if (others.length === 0) return { ...primary, servesRaces: [primary.raceName] };
+
+  let merged = { ...primary };
+
+  for (const other of others) {
+    const sameType = other.workoutType === merged.workoutType;
+    const bothVolume = VOLUME_TYPES.has(other.workoutType) && VOLUME_TYPES.has(merged.workoutType);
+
+    if ((sameType || bothVolume) && (other.targetDistanceMiles ?? 0) > (merged.targetDistanceMiles ?? 0)) {
+      merged = {
+        ...merged,
+        workoutType: other.workoutType,
+        targetDistanceMiles: other.targetDistanceMiles,
+        description: other.description,
+      };
+      continue;
+    }
+
+    if (merged.workoutType === "EASY" && QUALITY_TYPES.has(other.workoutType)) {
+      merged = {
+        ...merged,
+        workoutType: other.workoutType,
+        targetDistanceMiles: other.targetDistanceMiles,
+        description: other.description,
+      };
+    }
+  }
+
+  // Ordered by how the plans were prioritised, so the goal race reads first.
+  const servesRaces = [primary.raceName, ...others.map((o) => o.raceName)].filter(
+    (name, i, all) => all.indexOf(name) === i
+  );
+
+  return { ...merged, servesRaces };
 }
 
 /**
@@ -245,6 +311,7 @@ export async function buildCalendarRange(
         clubSuggestionReason: workout.clubSuggestion?.matchReason ?? null,
         hasRoute: !!workout.generatedRoute,
         easedFor: null,
+        servesRaces: [meta.raceName],
       };
 
       const existing = byDate.get(key) ?? [];
@@ -289,25 +356,19 @@ export async function buildCalendarRange(
     const backbonePlanId = resolveBackbonePlanId(date, planMeta);
     const raceDays = raceDaysByDate.get(key) ?? [];
 
-    let workout: CalendarWorkout | null = null;
-    const deferredWorkouts: CalendarWorkout[] = [];
-
-    for (const candidate of candidates) {
-      if (candidate.planId === backbonePlanId && !workout) workout = candidate;
-      else deferredWorkouts.push(candidate);
-    }
-
     const backboneCoversDate = backbonePlanId
       ? (coveredDatesByPlan.get(backbonePlanId)?.has(key) ?? false)
       : false;
-    const isRestDay = backboneCoversDate && !workout;
+    const backboneHasSession = candidates.some((c) => c.planId === backbonePlanId);
+    const isRestDay = backboneCoversDate && !backboneHasSession;
 
-    // Only borrow another race's session when the backbone genuinely isn't
-    // running this date -- a prescribed rest day stands, and nothing gets
-    // stacked onto a race day.
-    if (!workout && !backboneCoversDate && raceDays.length === 0 && deferredWorkouts.length > 0) {
-      workout = deferredWorkouts.shift()!;
-    }
+    // A rest day the backbone prescribed stands, and nothing is scheduled on
+    // a race day -- otherwise every race's ask for the day collapses into the
+    // one session that best serves all of them.
+    let workout: CalendarWorkout | null =
+      (isRestDay && candidates.length > 0) || raceDays.length > 0
+        ? null
+        : mergeDaySessions(candidates, backbonePlanId);
 
     // Inside an interim race's sharpen/recovery window the backbone's hard
     // sessions get eased rather than run as written -- racing hard two days
@@ -323,7 +384,6 @@ export async function buildCalendarRange(
       isToday: key === todayKey,
       raceDays,
       workout,
-      deferredWorkouts,
       isRestDay,
       adjustment,
       actualMiles: actualByDate.get(key) ?? null,
