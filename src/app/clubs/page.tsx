@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DiscoverClubsButton } from "@/components/clubs/DiscoverClubsButton";
 import { ClubCard } from "@/components/clubs/ClubCard";
+import { RefreshClubEventsButton } from "@/components/clubs/RefreshClubEventsButton";
 
 export default async function ClubsPage() {
   const user = await getCurrentUser();
@@ -25,7 +26,10 @@ export default async function ClubsPage() {
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Run Clubs</h1>
-        <DiscoverClubsButton />
+        <div className="flex items-start gap-2">
+          <RefreshClubEventsButton />
+          <DiscoverClubsButton />
+        </div>
       </div>
 
       {!user.homeCity && (

@@ -23,6 +23,8 @@ interface ClubData {
   discoverySource: string;
   status: string;
   sessions: ClubSessionData[];
+  stravaClubId: bigint | null;
+  lastEventsSyncedAt: Date | null;
 }
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -97,7 +99,13 @@ export function ClubCard({ club }: { club: ClubData }) {
 
       <div className="flex flex-col gap-2">
         {club.sessions.length === 0 && (
-          <p className="text-xs text-muted-foreground">No schedule found yet — add one below.</p>
+          <p className="text-xs text-muted-foreground">
+            {club.stravaClubId && !club.lastEventsSyncedAt
+              ? "Strava events not checked yet — hit “Refresh club events” above."
+              : club.stravaClubId
+                ? "No recurring events posted on Strava — add a session below."
+                : "No schedule found yet — add one below."}
+          </p>
         )}
         {club.sessions.map((session) => (
           <ClubSessionRow key={session.id} clubId={club.id} session={session} />

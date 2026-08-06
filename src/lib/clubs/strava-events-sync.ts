@@ -70,6 +70,10 @@ export interface StravaEventSyncResult {
   clubsProcessed: number;
   sessionsAdded: number;
   sessionsUpdated: number;
+  /** Clubs still waiting on a check after this run, so callers can report progress. */
+  remaining: number;
+  /** True when Strava's read limit cut the run short rather than it finishing. */
+  rateLimited: boolean;
 }
 
 /**
@@ -87,22 +91,28 @@ export interface StravaEventSyncResult {
  * limit in testing, so full discovery is spread across several real
  * Strava-sync calls instead of attempted all at once.
  */
-export async function syncClubSessionsFromStrava(userId: string, accessToken: string): Promise<StravaEventSyncResult> {
+export async function syncClubSessionsFromStrava(
+  userId: string,
+  accessToken: string,
+  { limit = CLUBS_PER_SYNC_BATCH }: { limit?: number } = {}
+): Promise<StravaEventSyncResult> {
   const recheckCutoff = addDays(today(), -RECHECK_INTERVAL_DAYS);
+  const dueFilter = {
+    userId,
+    status: "TRACKED" as const,
+    stravaClubId: { not: null },
+    OR: [{ lastEventsSyncedAt: null }, { lastEventsSyncedAt: { lt: recheckCutoff } }],
+  };
 
   const dueClubs = await prisma.club.findMany({
-    where: {
-      userId,
-      status: "TRACKED",
-      stravaClubId: { not: null },
-      OR: [{ lastEventsSyncedAt: null }, { lastEventsSyncedAt: { lt: recheckCutoff } }],
-    },
+    where: dueFilter,
     orderBy: { lastEventsSyncedAt: { sort: "asc", nulls: "first" } },
-    take: CLUBS_PER_SYNC_BATCH,
+    take: limit,
   });
 
   let sessionsAdded = 0;
   let sessionsUpdated = 0;
+  let rateLimited = false;
 
   for (const club of dueClubs) {
     if (!club.stravaClubId) continue;
@@ -110,8 +120,15 @@ export async function syncClubSessionsFromStrava(userId: string, accessToken: st
     let events;
     try {
       events = await fetchClubGroupEvents(accessToken, Number(club.stravaClubId));
-    } catch {
-      continue; // best-effort -- one club's failure shouldn't block the rest, retried next sync
+    } catch (error) {
+      // A 429 means every remaining club would fail too, so stop rather than
+      // burning the rest of the batch on requests that can't succeed. Anything
+      // else is treated as this club's problem and retried next run.
+      if (error instanceof Error && error.message.includes("429")) {
+        rateLimited = true;
+        break;
+      }
+      continue;
     }
 
     // Fetched in parallel within this one club (bounded by
@@ -162,5 +179,7 @@ export async function syncClubSessionsFromStrava(userId: string, accessToken: st
     }
   }
 
-  return { clubsProcessed: dueClubs.length, sessionsAdded, sessionsUpdated };
+  const remaining = await prisma.club.count({ where: dueFilter });
+
+  return { clubsProcessed: dueClubs.length, sessionsAdded, sessionsUpdated, remaining, rateLimited };
 }
