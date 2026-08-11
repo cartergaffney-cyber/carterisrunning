@@ -1,23 +1,50 @@
 @import "tailwindcss";
 
+/*
+ * Tailwind's dark: variant defaults to prefers-color-scheme, but this site is
+ * single-theme dark regardless of OS setting. Rebinding the variant to a class
+ * on <html> keeps the ~80 existing dark: utilities in step with the palette --
+ * otherwise a visitor whose OS is set to light would get the dark brand
+ * background with every chip still rendering its light-mode colours.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Brand palette -- see docs/Carter-Is-Running-Brand-Book.html and the style
+ * guide. The site is deliberately single-theme: the guide specifies the dark
+ * heather grey as the only background across the site, with no pure white or
+ * pure black, so there is no light-mode variant to fall back to.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --surface: #ffffff;
-  --surface-muted: #fafafa;
-  --border: #e4e4e7;
-  --muted-foreground: #71717a;
-  --accent: #e4572e;
-  --accent-hover: #c8481f;
-  --accent-foreground: #ffffff;
+  --brand-bg: #2e2e30;
+  --brand-blue: #57c8e8;
+  --brand-blue-pale: #a7def0;
+  --brand-blue-light: #7cd1ea;
+  --brand-blue-dark: #1ca6c5;
+  --brand-blue-darkest: #0f7f99;
+  --brand-yellow: #e6e75c;
+  --brand-road-gray: #45474b;
+  --brand-text-on-light: #22242a;
+
+  --background: var(--brand-bg);
+  --foreground: #f2f4f5;
+  /* Panels sit a touch lighter than the page, per the card pattern. */
+  --surface: #38383b;
+  --surface-muted: #333336;
+  /* Rules echo the road-bar edge lines: thin, low-opacity brand blue. */
+  --border: rgba(28, 166, 197, 0.28);
+  --muted-foreground: #a8b3b8;
+  --accent: var(--brand-blue);
+  --accent-hover: var(--brand-blue-light);
+  --accent-foreground: var(--brand-text-on-light);
 
   /* dataviz palette (see references/palette.md in the dataviz skill) */
-  --chart-blue: #2a78d6;
-  --chart-green: #008300;
-  --chart-text-secondary: #52514e;
-  --chart-muted: #898781;
-  --chart-gridline: #e1e0d9;
-  --chart-baseline: #c3c2b7;
+  --chart-blue: var(--brand-blue);
+  --chart-green: #6dd48a;
+  --chart-text-secondary: #a8b3b8;
+  --chart-muted: #7d8b91;
+  --chart-gridline: rgba(167, 222, 240, 0.14);
+  --chart-baseline: rgba(167, 222, 240, 0.3);
 }
 
 @theme inline {
@@ -30,33 +57,29 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-foreground: var(--accent-foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-blue-dark: var(--brand-blue-dark);
+  --font-sans: var(--font-josefin-slab);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --surface: #141414;
-    --surface-muted: #1a1a1a;
-    --border: #2a2a2a;
-    --muted-foreground: #a1a1aa;
-    --accent: #ff7a50;
-    --accent-hover: #ff9068;
-    --accent-foreground: #1a0a05;
-
-    --chart-blue: #3987e5;
-    --chart-green: #008300;
-    --chart-text-secondary: #c3c2b7;
-    --chart-muted: #898781;
-    --chart-gridline: #2c2c2a;
-    --chart-baseline: #383835;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-josefin-slab), Georgia, serif;
+}
+
+/*
+ * Secondary/label type: nav items, eyebrows, captions. Letter-spacing and
+ * light weight are what make these read as brand rather than as small body
+ * copy, so they're bundled into one utility instead of repeated ad hoc.
+ */
+.brand-label {
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.brand-display {
+  font-weight: 700;
 }

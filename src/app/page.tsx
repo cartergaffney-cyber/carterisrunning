@@ -1,6 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
+import { Logo } from "@/components/brand/Logo";
+import { TopoBadge } from "@/components/brand/TopoBadge";
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -9,28 +10,28 @@ export default async function HomePage() {
     <div className="flex flex-1 flex-col">
       {!user && (
         <nav className="flex items-center justify-between gap-6 border-b border-border px-6 py-4 sm:px-10">
-          <div className="flex items-center gap-2">
-            <Image src="/branding/carter-is-running-icon.svg" alt="" width={24} height={24} className="rounded-md" />
-            <span className="text-sm font-semibold tracking-tight">Carter Is Running</span>
+          <div className="flex items-center gap-2.5">
+            <TopoBadge size={28} />
+            <span className="brand-label text-sm text-[color:var(--brand-blue)]">Carter Is Running</span>
           </div>
           <div className="hidden items-center gap-8 sm:flex">
-            <a href="#features" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            <a href="#features" className="brand-label text-xs text-muted-foreground transition-colors hover:text-[color:var(--brand-blue)]">
               Features
             </a>
-            <a href="#how-it-works" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            <a href="#how-it-works" className="brand-label text-xs text-muted-foreground transition-colors hover:text-[color:var(--brand-blue)]">
               How it works
             </a>
           </div>
           <div className="flex items-center gap-4">
             <Link
               href="/login"
-              className="text-sm font-medium text-foreground transition-colors hover:text-muted-foreground"
+              className="brand-label text-xs text-foreground transition-colors hover:text-[color:var(--brand-blue)]"
             >
               Log in
             </Link>
             <Link
               href="/login"
-              className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
+              className="brand-label rounded-md bg-accent px-5 py-2 text-xs font-bold text-accent-foreground transition-colors hover:bg-accent-hover"
             >
               Get started
             </Link>
@@ -39,23 +40,15 @@ export default async function HomePage() {
       )}
 
       <section className="flex flex-col items-center gap-6 px-6 py-20 text-center sm:py-28">
-        <div className="relative h-56 w-full max-w-2xl overflow-hidden rounded-3xl shadow-sm sm:h-72">
-          <Image
-            src="/images/hero-runner.jpg"
-            alt="Runner on an open road at sunrise"
-            fill
-            priority
-            sizes="(min-width: 640px) 42rem, 100vw"
-            className="object-cover"
-          />
-        </div>
-        <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-6xl">Carter Is Running</h1>
+        <h1 className="sr-only">Carter Is Running</h1>
+        <Logo width={260} className="sm:hidden" />
+        <Logo width={330} className="hidden sm:block" />
         <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
           Running informed by AI and powered by community.
         </p>
         <Link
           href={user ? "/dashboard" : "/login"}
-          className="mt-2 flex h-12 items-center justify-center rounded-full bg-accent px-7 text-base font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover"
+          className="brand-label mt-2 flex h-12 items-center justify-center rounded-md bg-accent px-8 text-sm font-bold text-accent-foreground transition-colors hover:bg-accent-hover"
         >
           {user ? "Go to dashboard" : "Get started"}
         </Link>

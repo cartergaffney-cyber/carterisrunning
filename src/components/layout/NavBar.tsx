@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { TopoBadge } from "@/components/brand/TopoBadge";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 
@@ -21,16 +21,16 @@ export async function NavBar() {
 
   return (
     <nav className="flex items-center gap-6 border-b border-border px-8 py-3">
-      <Link href="/" className="flex items-center gap-2">
-        <Image src="/branding/carter-is-running-icon.svg" alt="" width={22} height={22} className="rounded-md" />
-        <span className="text-sm font-semibold tracking-tight">Carter Is Running</span>
+      <Link href="/" className="flex items-center gap-2.5">
+        <TopoBadge size={26} />
+        <span className="brand-label text-sm text-[color:var(--brand-blue)]">Carter Is Running</span>
       </Link>
       <div className="flex gap-5">
         {navLinks.map((link) => (
           <Link
             key={link.label}
             href={link.href}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="brand-label flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-[color:var(--brand-blue)]"
           >
             {link.label}
             {!!link.badge && (

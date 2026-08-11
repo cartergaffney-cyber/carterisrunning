@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { Logo } from "@/components/brand/Logo";
 
 export default async function LoginPage({
   searchParams,
@@ -9,15 +9,9 @@ export default async function LoginPage({
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-      <Image
-        src="/branding/carter-is-running-icon.svg"
-        alt=""
-        width={64}
-        height={64}
-        className="rounded-2xl shadow-sm"
-      />
+      <h1 className="sr-only">Carter Is Running</h1>
+      <Logo width={200} />
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Carter Is Running</h1>
         <p className="max-w-sm text-sm text-muted-foreground">
           Training plans, run club matching, and Strava-synced tracking.
         </p>

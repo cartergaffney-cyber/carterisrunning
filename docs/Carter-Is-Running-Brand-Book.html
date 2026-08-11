@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Carter Is Running — Brand Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Slab:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#2E2E30;
+    --bg-panel:#262628;
+    --bg-panel-2:#333335;
+    --blue:#57C8E8;
+    --blue-l:#A7DEF0;
+    --blue-m:#7CD1EA;
+    --blue-d:#1CA6C5;
+    --blue-dd:#0f7f99;
+    --yellow:#E6E75C;
+    --yellow-d:#E7E115;
+    --ink:#F3F3F1;
+    --ink-dim:#B9B9BC;
+    --line:#414144;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.6;
+  }
+  .display{font-family:'Josefin Slab',serif; font-weight:700; letter-spacing:0.5px;}
+  .label{font-family:'Josefin Slab',serif; font-weight:300;}
+  section{padding:90px 8vw; border-bottom:1px solid var(--line);}
+  section:last-child{border-bottom:none;}
+  .eyebrow{font-family:'Josefin Slab',serif; font-weight:600; color:var(--blue); letter-spacing:4px; font-size:13px; text-transform:uppercase; margin:0 0 10px;}
+  h1.display{font-size:clamp(36px,7vw,72px); margin:0; color:var(--blue);}
+  h2.display{font-size:clamp(26px,4.5vw,44px); margin:0 0 6px; color:var(--blue);}
+  p.sub{color:var(--ink-dim); max-width:640px; margin:0 0 40px; font-size:16px;}
+  .grid{display:grid; gap:28px;}
+  .cols-2{grid-template-columns:repeat(2,1fr);}
+  .cols-3{grid-template-columns:repeat(3,1fr);}
+  .cols-4{grid-template-columns:repeat(4,1fr);}
+  @media (max-width:900px){ .cols-2,.cols-3,.cols-4{grid-template-columns:repeat(2,1fr);} }
+  .card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:6px;
+    padding:28px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px;
+  }
+  .card img{max-width:100%; height:auto;}
+  .inline-logo{display:block; line-height:0;}
+  .inline-logo svg{width:100%; height:auto; display:block;}
+  .card .inline-logo{width:100%;}
+  .cover .inline-logo{width:min(340px,80vw); margin:0 auto;}
+  .mockup-nav .inline-logo{width:auto; height:52px;}
+  .mockup-nav .inline-logo svg{height:52px; width:auto;}
+  .card-app .inline-logo{width:170px; margin:0 auto 18px;}
+  .card .name{font-family:'Josefin Slab',serif; font-weight:700; letter-spacing:0.5px; font-size:16px; color:var(--ink);}
+  .card .use{font-size:13px; color:var(--ink-dim); margin:0;}
+  .card.pick{border-color:var(--yellow); box-shadow:0 0 0 1px var(--yellow);}
+  .pick-tag{display:inline-block; background:var(--yellow); color:var(--bg); font-family:'Josefin Slab',serif; font-weight:600; font-size:11px; letter-spacing:1px; padding:4px 10px; border-radius:20px; margin-bottom:4px;}
+  .cover{
+    min-height:92vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:26px; padding:60px 8vw; border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(87,200,232,0.10), transparent 60%),
+      var(--bg);
+  }
+  .cover .kicker{font-family:'Josefin Slab',serif; font-weight:400; letter-spacing:6px; color:var(--yellow); font-size:13px;}
+  .cover h1{font-size:clamp(20px,3vw,26px); color:var(--ink-dim); font-weight:400; letter-spacing:3px; margin:0; font-family:'Josefin Slab',serif;}
+  .statement-grid{display:grid; grid-template-columns:1fr 1.3fr; gap:60px; align-items:start;}
+  @media (max-width:900px){.statement-grid{grid-template-columns:1fr;}}
+  .statement-grid img{width:100%; max-width:320px;}
+  .statement-grid p{color:var(--ink-dim); font-size:16.5px;}
+  .statement-grid strong{color:var(--ink);}
+  .swatch{border-radius:6px; overflow:hidden; border:1px solid var(--line);}
+  .swatch .fill{height:96px;}
+  .swatch .meta{background:var(--bg-panel); padding:12px 16px; font-family:'Josefin Slab',serif; font-weight:400; font-size:13px;}
+  .swatch .meta .hex{color:var(--ink); display:block; margin-top:2px; font-family:monospace; letter-spacing:1px;}
+  .type-block{background:var(--bg-panel); border:1px solid var(--line); border-radius:6px; padding:34px;}
+  .type-block .alpha{font-size:clamp(20px,3vw,30px); color:var(--blue); letter-spacing:1px; line-height:1.6; font-weight:700;}
+  .type-block .alpha.lower{color:var(--blue-m); margin-top:6px;}
+  .type-block.sec .alpha{color:var(--yellow); font-weight:300;}
+  .type-block.sec .alpha.lower{color:var(--yellow-d);}
+  .type-meta{display:flex; justify-content:space-between; align-items:baseline; margin-top:18px; border-top:1px solid var(--line); padding-top:14px;}
+  .type-meta .role{font-family:'Josefin Slab',serif; font-weight:400; font-size:12px; letter-spacing:3px; color:var(--ink-dim); text-transform:uppercase;}
+  .type-meta .fam{font-family:'Josefin Slab',serif; font-weight:700; letter-spacing:0.5px; font-size:16px;}
+  .note{font-size:13px; color:var(--ink-dim); margin-top:10px; border-left:3px solid var(--blue-d); padding-left:12px;}
+  .element-card{background:var(--bg-panel); border:1px solid var(--line); border-radius:6px; padding:30px; text-align:center;}
+  .element-card img{max-width:220px; width:100%;}
+  .element-card h3{font-family:'Josefin Slab',serif; font-weight:700; letter-spacing:0.5px; margin:14px 0 6px; color:var(--ink); font-size:16px;}
+  .element-card p{font-size:13.5px; color:var(--ink-dim); margin:0;}
+  .mockup-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px; padding:18px 28px;
+  }
+  .mockup-nav img{height:52px;}
+  .mockup-nav .links{display:flex; gap:26px; font-family:'Josefin Slab',serif; font-weight:400; font-size:13px; letter-spacing:2px; color:var(--ink-dim);}
+  .mockup-nav .cta{background:var(--yellow); color:var(--bg); font-family:'Josefin Slab',serif; font-weight:600; padding:9px 20px; border-radius:4px; font-size:13px; letter-spacing:1px;}
+  .card-app{
+    width:340px; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:10px;
+    padding:34px 28px; text-align:center;
+  }
+  .card-app .who{font-family:'Josefin Slab',serif; font-weight:700; letter-spacing:0.5px; font-size:19px; color:var(--ink);}
+  .card-app .role{font-family:'Josefin Slab',serif; font-weight:400; font-size:11px; letter-spacing:3px; color:var(--yellow); margin:2px 0 16px;}
+  .card-app .contact{font-size:12.5px; color:var(--ink-dim); line-height:1.9;}
+  footer{padding:50px 8vw; text-align:center; color:var(--ink-dim); font-size:13px;}
+  code{background:var(--bg-panel-2); padding:2px 6px; border-radius:3px; font-size:12px;}
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<section class="cover">
+  <div class="kicker">EST. 2026</div>
+  <span class="inline-logo"><svg width="400" height="547.0899999999999" viewBox="0 0 400 547.0899999999999" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect width="400" height="547.0899999999999" fill="#2E2E30"/>
+
+<g transform="translate(109.9,141.8) rotate(-37.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">C</text></g>
+<g transform="translate(143.4,122.4) rotate(-22.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">A</text></g>
+<g transform="translate(180.7,112.4) rotate(-7.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">R</text></g>
+<g transform="translate(219.3,112.4) rotate(7.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">T</text></g>
+<g transform="translate(256.6,122.4) rotate(22.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">E</text></g>
+<g transform="translate(290.1,141.8) rotate(37.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">R</text></g>
+<g transform="translate(200,275) scale(1.35) translate(-100,-104)"><g fill="none" stroke-width="2.2"><path stroke="#A7DEF0" d="M208.4,104.0 C207.5,120.2 187.1,138.8 173.5,151.0 C159.9,163.2 143.7,172.8 127.0,177.1 C110.3,181.3 90.3,180.6 73.3,176.4 C56.2,172.3 38.0,164.1 24.9,152.0 C11.9,139.9 -5.4,119.6 -4.8,104.0 C-4.3,88.4 14.8,69.0 28.3,58.1 C41.7,47.3 58.9,45.1 75.9,38.9 C93.0,32.7 113.5,18.5 130.7,20.9 C147.8,23.4 166.0,39.7 178.9,53.5 C191.9,67.4 209.3,87.8 208.4,104.0 Z"/><path stroke="#7CD1EA" d="M188.4,104.0 C187.4,117.3 170.6,132.2 159.6,142.1 C148.5,152.0 135.6,159.6 121.9,163.3 C108.3,167.1 91.8,167.8 77.6,164.6 C63.5,161.4 48.0,154.4 36.9,144.3 C25.8,134.2 9.6,116.4 11.2,104.0 C12.7,91.6 35.1,79.3 46.4,69.7 C57.7,60.2 65.7,52.5 78.8,46.7 C92.0,40.9 111.1,32.3 125.5,34.9 C140.0,37.5 155.1,50.5 165.6,62.1 C176.1,73.6 189.4,90.7 188.4,104.0 Z"/><path stroke="#57C8E8" d="M164.9,104.0 C164.0,114.5 154.5,126.1 146.5,133.7 C138.5,141.3 127.6,146.4 116.8,149.6 C106.1,152.8 93.5,155.0 81.9,153.1 C70.3,151.1 55.5,146.0 47.2,137.8 C38.8,129.6 29.0,113.6 31.6,104.0 C34.3,94.4 54.9,89.0 63.2,80.4 C71.4,71.9 71.6,57.9 81.1,52.8 C90.6,47.8 108.2,46.9 120.0,49.9 C131.8,52.9 144.4,61.8 151.9,70.8 C159.3,79.9 165.8,93.5 164.9,104.0 Z"/><path stroke="#1CA6C5" d="M143.4,104.0 C142.8,111.5 138.4,119.7 133.3,125.3 C128.1,130.8 120.1,134.7 112.3,137.3 C104.5,140.0 95.5,142.0 86.3,141.1 C77.1,140.1 61.6,137.7 56.9,131.6 C52.2,125.4 55.7,111.5 58.3,104.0 C60.9,96.5 67.9,93.1 72.3,86.3 C76.7,79.5 77.9,66.9 84.9,63.2 C92.0,59.5 106.1,61.2 114.8,64.0 C123.4,66.9 132.0,73.8 136.8,80.5 C141.6,87.1 144.0,96.5 143.4,104.0 Z"/><path stroke="#0f7f99" d="M126.5,104.0 C126.2,108.4 122.5,112.7 119.4,116.4 C116.3,120.1 113.0,123.7 108.1,126.0 C103.3,128.3 96.4,130.9 90.3,130.3 C84.2,129.7 72.8,126.6 71.4,122.3 C70.1,117.9 81.3,109.4 82.3,104.0 C83.4,98.6 76.2,94.0 77.5,89.6 C78.8,85.3 85.0,79.8 90.3,77.8 C95.7,75.8 104.5,75.6 109.7,77.7 C114.9,79.7 118.8,85.8 121.6,90.2 C124.4,94.6 126.9,99.6 126.5,104.0 Z"/></g><circle cx="100" cy="104" r="2.6" fill="#E6E75C"/></g><rect x="54" y="448.09" width="292" height="39" rx="4" fill="#45474b"/><line x1="58" y1="454.09" x2="342" y2="454.09" stroke="#E6E75C" stroke-width="2" stroke-linecap="round"/><line x1="58" y1="481.09" x2="342" y2="481.09" stroke="#E6E75C" stroke-width="2" stroke-linecap="round"/><line x1="58" y1="467.59" x2="342" y2="467.59" stroke="#E6E75C" stroke-width="2.2" stroke-dasharray="10,7" stroke-linecap="round"/><text x="200" y="424.09" font-family="Josefin Slab, serif" font-weight="300" font-size="22" letter-spacing="4" fill="#57C8E8" text-anchor="middle">IS RUNNING</text><text x="200" y="521.0899999999999" font-family="Josefin Slab, serif" font-weight="300" font-size="13" letter-spacing="5" fill="#1CA6C5" text-anchor="middle">EST. 2026</text>
+</svg></span>
+  <h1>BRAND BOOK</h1>
+</section>
+
+<!-- BRAND STATEMENT -->
+<section>
+  <div class="eyebrow">Carter Is Running</div>
+  <h2 class="display">Brand Statement</h2>
+  <div class="statement-grid" style="margin-top:36px;">
+    <img src="icon-03-topo-badge.svg" alt="Topo badge mark">
+    <div>
+      <p style="font-size:20px; color:var(--ink);"><strong>Every mile earns its place.</strong></p>
+      <p>Carter Is Running is built for the long game — the early alarms, the empty streets, the
+      miles that don't show up on a map until you've run them. It's not about being the fastest
+      person on the course. It's about showing up, adapting to the road in front of you, and doing
+      the work.</p>
+      <p><strong>The identity</strong> retires the kettlebell and ocean wave of the brand it's
+      descended from for iconography that's true to the sport: the road underfoot and the
+      topographic contour lines of the terrain around it. No finish-line hero shots, no
+      gear-snob elitism — just honest miles.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN LOGO OPTIONS -->
+<section>
+  <div class="eyebrow">Identity · Round 8</div>
+  <h2 class="display">Primary Logo</h2>
+  <p class="sub">The finalized primary lockup, locked in as the brand's main mark.</p>
+  <div class="grid cols-3">
+    <div class="card pick"><span class="pick-tag">Primary Logo</span><span class="inline-logo"><svg width="400" height="547.0899999999999" viewBox="0 0 400 547.0899999999999" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect width="400" height="547.0899999999999" fill="#2E2E30"/>
+
+<g transform="translate(109.9,141.8) rotate(-37.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">C</text></g>
+<g transform="translate(143.4,122.4) rotate(-22.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">A</text></g>
+<g transform="translate(180.7,112.4) rotate(-7.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">R</text></g>
+<g transform="translate(219.3,112.4) rotate(7.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">T</text></g>
+<g transform="translate(256.6,122.4) rotate(22.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">E</text></g>
+<g transform="translate(290.1,141.8) rotate(37.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">R</text></g>
+<g transform="translate(200,275) scale(1.35) translate(-100,-104)"><g fill="none" stroke-width="2.2"><path stroke="#A7DEF0" d="M208.4,104.0 C207.5,120.2 187.1,138.8 173.5,151.0 C159.9,163.2 143.7,172.8 127.0,177.1 C110.3,181.3 90.3,180.6 73.3,176.4 C56.2,172.3 38.0,164.1 24.9,152.0 C11.9,139.9 -5.4,119.6 -4.8,104.0 C-4.3,88.4 14.8,69.0 28.3,58.1 C41.7,47.3 58.9,45.1 75.9,38.9 C93.0,32.7 113.5,18.5 130.7,20.9 C147.8,23.4 166.0,39.7 178.9,53.5 C191.9,67.4 209.3,87.8 208.4,104.0 Z"/><path stroke="#7CD1EA" d="M188.4,104.0 C187.4,117.3 170.6,132.2 159.6,142.1 C148.5,152.0 135.6,159.6 121.9,163.3 C108.3,167.1 91.8,167.8 77.6,164.6 C63.5,161.4 48.0,154.4 36.9,144.3 C25.8,134.2 9.6,116.4 11.2,104.0 C12.7,91.6 35.1,79.3 46.4,69.7 C57.7,60.2 65.7,52.5 78.8,46.7 C92.0,40.9 111.1,32.3 125.5,34.9 C140.0,37.5 155.1,50.5 165.6,62.1 C176.1,73.6 189.4,90.7 188.4,104.0 Z"/><path stroke="#57C8E8" d="M164.9,104.0 C164.0,114.5 154.5,126.1 146.5,133.7 C138.5,141.3 127.6,146.4 116.8,149.6 C106.1,152.8 93.5,155.0 81.9,153.1 C70.3,151.1 55.5,146.0 47.2,137.8 C38.8,129.6 29.0,113.6 31.6,104.0 C34.3,94.4 54.9,89.0 63.2,80.4 C71.4,71.9 71.6,57.9 81.1,52.8 C90.6,47.8 108.2,46.9 120.0,49.9 C131.8,52.9 144.4,61.8 151.9,70.8 C159.3,79.9 165.8,93.5 164.9,104.0 Z"/><path stroke="#1CA6C5" d="M143.4,104.0 C142.8,111.5 138.4,119.7 133.3,125.3 C128.1,130.8 120.1,134.7 112.3,137.3 C104.5,140.0 95.5,142.0 86.3,141.1 C77.1,140.1 61.6,137.7 56.9,131.6 C52.2,125.4 55.7,111.5 58.3,104.0 C60.9,96.5 67.9,93.1 72.3,86.3 C76.7,79.5 77.9,66.9 84.9,63.2 C92.0,59.5 106.1,61.2 114.8,64.0 C123.4,66.9 132.0,73.8 136.8,80.5 C141.6,87.1 144.0,96.5 143.4,104.0 Z"/><path stroke="#0f7f99" d="M126.5,104.0 C126.2,108.4 122.5,112.7 119.4,116.4 C116.3,120.1 113.0,123.7 108.1,126.0 C103.3,128.3 96.4,130.9 90.3,130.3 C84.2,129.7 72.8,126.6 71.4,122.3 C70.1,117.9 81.3,109.4 82.3,104.0 C83.4,98.6 76.2,94.0 77.5,89.6 C78.8,85.3 85.0,79.8 90.3,77.8 C95.7,75.8 104.5,75.6 109.7,77.7 C114.9,79.7 118.8,85.8 121.6,90.2 C124.4,94.6 126.9,99.6 126.5,104.0 Z"/></g><circle cx="100" cy="104" r="2.6" fill="#E6E75C"/></g><rect x="54" y="448.09" width="292" height="39" rx="4" fill="#45474b"/><line x1="58" y1="454.09" x2="342" y2="454.09" stroke="#E6E75C" stroke-width="2" stroke-linecap="round"/><line x1="58" y1="481.09" x2="342" y2="481.09" stroke="#E6E75C" stroke-width="2" stroke-linecap="round"/><line x1="58" y1="467.59" x2="342" y2="467.59" stroke="#E6E75C" stroke-width="2.2" stroke-dasharray="10,7" stroke-linecap="round"/><text x="200" y="424.09" font-family="Josefin Slab, serif" font-weight="300" font-size="22" letter-spacing="4" fill="#57C8E8" text-anchor="middle">IS RUNNING</text><text x="200" y="521.0899999999999" font-family="Josefin Slab, serif" font-weight="300" font-size="13" letter-spacing="5" fill="#1CA6C5" text-anchor="middle">EST. 2026</text>
+</svg></span><div class="name">Option 1 · Road + Topo</div><p class="use">Flat-end road hugging the yellow lines, tight spacing around the topo</p></div>
+  </div>
+</section>
+
+<!-- ICON MARKS -->
+<section>
+  <div class="eyebrow">Identity</div>
+  <h2 class="display">Icon Marks</h2>
+  <p class="sub">The topo badge — the one icon mark we're keeping in rotation.</p>
+  <div class="grid cols-4" style="max-width:220px;">
+    <div class="card"><img src="icon-03-topo-badge.svg" alt="Topo badge icon"><div class="name">Topo Badge</div><p class="use">Trail / terrain content, favicon, app icon</p></div>
+  </div>
+</section>
+
+<!-- TYPOGRAPHY -->
+<section>
+  <div class="eyebrow">Foundations</div>
+  <h2 class="display">Typography</h2>
+  <p class="sub">One typeface: Josefin Slab, used bold for the wordmark and light for everything else.</p>
+  <div class="grid cols-2">
+    <div class="type-block">
+      <div class="alpha">ABCDEFGHIJKLM<br>NOPQRSTUVWXYZ</div>
+      <div class="alpha lower">abcdefghijklm<br>nopqrstuvwxyz</div>
+      <div class="type-meta"><span class="role">Primary / Wordmark</span><span class="fam">Josefin Slab · Bold</span></div>
+      <p class="note">Stands in for <strong>Big Noodle Titling</strong> (original primary). Used for CARTER, headlines, big numerals.</p>
+    </div>
+    <div class="type-block sec">
+      <div class="alpha" style="font-weight:300;">ABCDEFGHIJKLM<br>NOPQRSTUVWXYZ</div>
+      <div class="alpha lower" style="font-weight:300;">abcdefghijklm<br>nopqrstuvwxyz</div>
+      <div class="type-meta"><span class="role">Secondary / Label</span><span class="fam">Josefin Slab · Light</span></div>
+      <p class="note">Stands in for <strong>Homestead Regular</strong> (original secondary). Same family as primary, light weight only.</p>
+    </div>
+  </div>
+</section>
+
+<!-- COLOR -->
+<section>
+  <div class="eyebrow">Foundations</div>
+  <h2 class="display">Color Palette</h2>
+  <p class="sub">Unchanged from the original CFSM book: the same sky-blue primary and yellow secondary, on a dark heather grey ground instead of near-black.</p>
+  <div class="grid cols-4">
+    <div class="swatch"><div class="fill" style="background:#A7DEF0;"></div><div class="meta">Primary · Tint<span class="hex">#A7DEF0</span></div></div>
+    <div class="swatch"><div class="fill" style="background:#7CD1EA;"></div><div class="meta">Primary · Light<span class="hex">#7CD1EA</span></div></div>
+    <div class="swatch"><div class="fill" style="background:#57C8E8;"></div><div class="meta">Primary<span class="hex">#57C8E8</span></div></div>
+    <div class="swatch"><div class="fill" style="background:#1CA6C5;"></div><div class="meta">Primary · Dark<span class="hex">#1CA6C5</span></div></div>
+    <div class="swatch"><div class="fill" style="background:#E6E75C;"></div><div class="meta">Secondary<span class="hex">#E6E75C</span></div></div>
+    <div class="swatch"><div class="fill" style="background:#E7E115;"></div><div class="meta">Secondary · Deep<span class="hex">#E7E115</span></div></div>
+    <div class="swatch"><div class="fill" style="background:#2E2E30;"></div><div class="meta">Dark Heather Grey<span class="hex">#2E2E30</span></div></div>
+    <div class="swatch"><div class="fill" style="background:#F3F3F1;"></div><div class="meta">Ink (off-white)<span class="hex">#F3F3F1</span></div></div>
+  </div>
+</section>
+
+<!-- APPLICATIONS -->
+<section>
+  <div class="eyebrow">In Use</div>
+  <h2 class="display">Applications</h2>
+  <p class="sub">A quick look at the horizontal lockup in a website header, and the working Option 1 on a card/profile application.</p>
+  <div class="mockup-nav">
+    <span style="font-family:'Josefin Slab',serif; font-weight:700; font-size:22px; color:var(--blue); letter-spacing:0.5px;">CARTER <span style="font-weight:300; font-size:14px; letter-spacing:3px; color:var(--yellow);">IS RUNNING</span></span>
+    <div class="links"><span>TRAINING</span><span>ROUTES</span><span>SHOP</span><span>ABOUT</span></div>
+    <div class="cta">JOIN THE RUN</div>
+  </div>
+  <div style="display:flex; justify-content:center; margin-top:40px;">
+    <div class="card-app">
+      <span class="inline-logo"><svg width="400" height="547.0899999999999" viewBox="0 0 400 547.0899999999999" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect width="400" height="547.0899999999999" fill="#2E2E30"/>
+
+<g transform="translate(109.9,141.8) rotate(-37.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">C</text></g>
+<g transform="translate(143.4,122.4) rotate(-22.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">A</text></g>
+<g transform="translate(180.7,112.4) rotate(-7.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">R</text></g>
+<g transform="translate(219.3,112.4) rotate(7.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">T</text></g>
+<g transform="translate(256.6,122.4) rotate(22.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">E</text></g>
+<g transform="translate(290.1,141.8) rotate(37.5)"><text x="0" y="0" text-anchor="middle" font-family="Josefin Slab, serif" font-size="50" font-weight="700" fill="#57C8E8">R</text></g>
+<g transform="translate(200,275) scale(1.35) translate(-100,-104)"><g fill="none" stroke-width="2.2"><path stroke="#A7DEF0" d="M208.4,104.0 C207.5,120.2 187.1,138.8 173.5,151.0 C159.9,163.2 143.7,172.8 127.0,177.1 C110.3,181.3 90.3,180.6 73.3,176.4 C56.2,172.3 38.0,164.1 24.9,152.0 C11.9,139.9 -5.4,119.6 -4.8,104.0 C-4.3,88.4 14.8,69.0 28.3,58.1 C41.7,47.3 58.9,45.1 75.9,38.9 C93.0,32.7 113.5,18.5 130.7,20.9 C147.8,23.4 166.0,39.7 178.9,53.5 C191.9,67.4 209.3,87.8 208.4,104.0 Z"/><path stroke="#7CD1EA" d="M188.4,104.0 C187.4,117.3 170.6,132.2 159.6,142.1 C148.5,152.0 135.6,159.6 121.9,163.3 C108.3,167.1 91.8,167.8 77.6,164.6 C63.5,161.4 48.0,154.4 36.9,144.3 C25.8,134.2 9.6,116.4 11.2,104.0 C12.7,91.6 35.1,79.3 46.4,69.7 C57.7,60.2 65.7,52.5 78.8,46.7 C92.0,40.9 111.1,32.3 125.5,34.9 C140.0,37.5 155.1,50.5 165.6,62.1 C176.1,73.6 189.4,90.7 188.4,104.0 Z"/><path stroke="#57C8E8" d="M164.9,104.0 C164.0,114.5 154.5,126.1 146.5,133.7 C138.5,141.3 127.6,146.4 116.8,149.6 C106.1,152.8 93.5,155.0 81.9,153.1 C70.3,151.1 55.5,146.0 47.2,137.8 C38.8,129.6 29.0,113.6 31.6,104.0 C34.3,94.4 54.9,89.0 63.2,80.4 C71.4,71.9 71.6,57.9 81.1,52.8 C90.6,47.8 108.2,46.9 120.0,49.9 C131.8,52.9 144.4,61.8 151.9,70.8 C159.3,79.9 165.8,93.5 164.9,104.0 Z"/><path stroke="#1CA6C5" d="M143.4,104.0 C142.8,111.5 138.4,119.7 133.3,125.3 C128.1,130.8 120.1,134.7 112.3,137.3 C104.5,140.0 95.5,142.0 86.3,141.1 C77.1,140.1 61.6,137.7 56.9,131.6 C52.2,125.4 55.7,111.5 58.3,104.0 C60.9,96.5 67.9,93.1 72.3,86.3 C76.7,79.5 77.9,66.9 84.9,63.2 C92.0,59.5 106.1,61.2 114.8,64.0 C123.4,66.9 132.0,73.8 136.8,80.5 C141.6,87.1 144.0,96.5 143.4,104.0 Z"/><path stroke="#0f7f99" d="M126.5,104.0 C126.2,108.4 122.5,112.7 119.4,116.4 C116.3,120.1 113.0,123.7 108.1,126.0 C103.3,128.3 96.4,130.9 90.3,130.3 C84.2,129.7 72.8,126.6 71.4,122.3 C70.1,117.9 81.3,109.4 82.3,104.0 C83.4,98.6 76.2,94.0 77.5,89.6 C78.8,85.3 85.0,79.8 90.3,77.8 C95.7,75.8 104.5,75.6 109.7,77.7 C114.9,79.7 118.8,85.8 121.6,90.2 C124.4,94.6 126.9,99.6 126.5,104.0 Z"/></g><circle cx="100" cy="104" r="2.6" fill="#E6E75C"/></g><rect x="54" y="448.09" width="292" height="39" rx="4" fill="#45474b"/><line x1="58" y1="454.09" x2="342" y2="454.09" stroke="#E6E75C" stroke-width="2" stroke-linecap="round"/><line x1="58" y1="481.09" x2="342" y2="481.09" stroke="#E6E75C" stroke-width="2" stroke-linecap="round"/><line x1="58" y1="467.59" x2="342" y2="467.59" stroke="#E6E75C" stroke-width="2.2" stroke-dasharray="10,7" stroke-linecap="round"/><text x="200" y="424.09" font-family="Josefin Slab, serif" font-weight="300" font-size="22" letter-spacing="4" fill="#57C8E8" text-anchor="middle">IS RUNNING</text><text x="200" y="521.0899999999999" font-family="Josefin Slab, serif" font-weight="300" font-size="13" letter-spacing="5" fill="#1CA6C5" text-anchor="middle">EST. 2026</text>
+</svg></span>
+      <div class="who">CARTER GAFFNEY</div>
+      <div class="role">FOUNDER</div>
+      <div class="contact">carter@carterisrunning.com<br>carterisrunning.com</div>
+    </div>
+  </div>
+</section>
+
+<!-- IMPLEMENTATION NOTES -->
+<section>
+  <div class="eyebrow">For The Website</div>
+  <h2 class="display">Using These Files</h2>
+  <p class="sub">Two things to set up once, so everything above renders correctly on the live site.</p>
+  <div class="grid cols-2">
+    <div class="type-block">
+      <div class="type-meta" style="margin-top:0; border-top:none; padding-top:0;"><span class="role">01 · Load the font</span></div>
+      <p class="note" style="margin-top:14px; border-left-color:var(--blue);">Add this to your site's <code>&lt;head&gt;</code> once, globally:<br><br>
+      <code style="color:var(--blue-l);">&lt;link href="https://fonts.googleapis.com/css2?family=Josefin+Slab:wght@300;400;600;700&amp;display=swap" rel="stylesheet"&gt;</code></p>
+    </div>
+    <div class="type-block">
+      <div class="type-meta" style="margin-top:0; border-top:none; padding-top:0;"><span class="role">02 · Inline the lockups with text</span></div>
+      <p class="note" style="margin-top:14px; border-left-color:var(--yellow);">The icon marks (no text) are safe to use as plain <code>&lt;img src="icon-…svg"&gt;</code> or favicons — they don't depend on any font.<br><br>
+      The full lockups contain live text, so <strong>paste their SVG markup directly into your HTML</strong> instead of loading them with <code>&lt;img&gt;</code>. Browsers block external font loading inside <code>&lt;img&gt;</code>-referenced SVGs; inlining lets the logo pick up the Google Fonts link above.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Carter Is Running — Brand Book · Est. 2026 · Adapted from the CFSM identity system
+</footer>
+
+</body>
+</html>
