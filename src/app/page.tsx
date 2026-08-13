@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { Logo } from "@/components/brand/Logo";
@@ -41,8 +42,23 @@ export default async function HomePage() {
 
       <section className="flex flex-col items-center gap-6 px-6 py-20 text-center sm:py-28">
         <h1 className="sr-only">Carter Is Running</h1>
-        <Logo width={260} className="sm:hidden" />
-        <Logo width={330} className="hidden sm:block" />
+        <Logo width={230} className="sm:hidden" />
+        <Logo width={290} className="hidden sm:block" />
+        {/*
+          Photo sits below the lockup rather than behind it: the brand guide
+          asks for clearspace and a low-texture surface around the wordmark,
+          which an overlay on a detailed photograph wouldn't give it.
+        */}
+        <div className="relative h-60 w-full max-w-3xl overflow-hidden rounded-lg border border-border sm:h-80">
+          <Image
+            src="/images/hero-runner.jpg"
+            alt="Runner heading up a Hill Country road at sunrise"
+            fill
+            priority
+            sizes="(min-width: 640px) 48rem, 100vw"
+            className="object-cover"
+          />
+        </div>
         <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
           Running informed by AI and powered by community.
         </p>
