@@ -1,7 +1,8 @@
 import { InputHTMLAttributes, SelectHTMLAttributes, forwardRef } from "react";
 
+/* Pills everywhere -- no sharp corners in the system. */
 const FIELD_CLASSES =
-  "rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-accent";
+  "rounded-full border border-border-strong bg-surface px-5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-faint-foreground focus:border-info";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   function Input({ className = "", ...props }, ref) {

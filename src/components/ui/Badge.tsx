@@ -1,24 +1,30 @@
 import { HTMLAttributes } from "react";
 
-export type BadgeTone = "neutral" | "accent" | "success" | "info" | "warning" | "danger";
+export type BadgeTone = "neutral" | "accent" | "success" | "info" | "pale" | "warning" | "danger";
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   tone?: BadgeTone;
 }
 
+/*
+ * Every tone is an accent at low alpha over the dark ground -- never a new hue.
+ * Session types map onto these: yellow for the hard days (tempo, intervals),
+ * blue for easy, pale for long runs, neutral for rest.
+ */
 const TONE_CLASSES: Record<BadgeTone, string> = {
-  neutral: "bg-surface-muted text-muted-foreground",
-  accent: "bg-accent/10 text-accent",
-  success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  info: "bg-sky-500/10 text-sky-700 dark:text-sky-400",
-  warning: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  danger: "bg-red-500/10 text-red-700 dark:text-red-400",
+  neutral: "bg-surface-muted text-faint-foreground",
+  accent: "bg-[var(--fill-yellow)] text-accent",
+  warning: "bg-[var(--fill-yellow)] text-accent",
+  info: "bg-[var(--fill-blue)] text-info",
+  pale: "bg-[var(--fill-pale)] text-[color:var(--brand-blue-pale)]",
+  success: "bg-[var(--fill-success)] text-success",
+  danger: "bg-[rgba(240,134,106,0.16)] text-danger",
 };
 
 export function Badge({ tone = "neutral", className = "", ...props }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${TONE_CLASSES[tone]} ${className}`}
+      className={`brand-label inline-flex items-center rounded-full px-3 py-1.5 text-[11px] leading-none ${TONE_CLASSES[tone]} ${className}`}
       {...props}
     />
   );

@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Josefin_Slab } from "next/font/google";
+import { Archivo, IBM_Plex_Mono, Josefin_Slab } from "next/font/google";
 import { NavBar } from "@/components/layout/NavBar";
 import "./globals.css";
 
 /*
- * The style guide specifies Google Fonts <link> tags. next/font/google is used
- * instead: it self-hosts the files at build time, so there's no render-blocking
- * request to fonts.googleapis.com and no flash of fallback serif. The tradeoff
- * is that the family name is hashed rather than literally "Josefin Slab" --
- * which matters for the logo SVG, whose <text> elements would otherwise fall
- * back to serif. See components/brand/Logo.tsx for how that's handled.
+ * Three faces, each with one job. Josefin Slab is display only -- demoting it
+ * off body copy is the readability fix the redesign is built around, since
+ * light uppercase slab at 12px was the main complaint.
+ *
+ * Loaded through next/font/google rather than the <link> tags the brand guide
+ * lists: it self-hosts at build time, so there's no render-blocking request to
+ * fonts.googleapis.com and no flash of fallback. See components/brand/Logo.tsx
+ * for why that matters to the wordmark SVG specifically.
  */
 const josefinSlab = Josefin_Slab({
   variable: "--font-josefin-slab",
@@ -17,9 +19,16 @@ const josefinSlab = Josefin_Slab({
   weight: ["300", "400", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -36,7 +45,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${josefinSlab.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${josefinSlab.variable} ${archivo.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <NavBar />
