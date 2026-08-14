@@ -15,6 +15,7 @@ export interface CalendarWorkout {
   workoutType: string;
   description: string;
   targetDistanceMiles: number | null;
+  targetPaceSecondsPerMile: number | null;
   completed: boolean;
   clubSuggestionReason: string | null;
   hasRoute: boolean;
@@ -219,6 +220,7 @@ function mergeDaySessions(candidates: CalendarWorkout[], backbonePlanId: string 
         ...merged,
         workoutType: other.workoutType,
         targetDistanceMiles: other.targetDistanceMiles,
+        targetPaceSecondsPerMile: other.targetPaceSecondsPerMile,
         description: other.description,
       };
       continue;
@@ -229,6 +231,7 @@ function mergeDaySessions(candidates: CalendarWorkout[], backbonePlanId: string 
         ...merged,
         workoutType: other.workoutType,
         targetDistanceMiles: other.targetDistanceMiles,
+        targetPaceSecondsPerMile: other.targetPaceSecondsPerMile,
         description: other.description,
       };
     }
@@ -344,6 +347,7 @@ export async function buildCalendarRange(
         workoutType: workout.workoutType,
         description: workout.description,
         targetDistanceMiles: workout.targetDistanceMiles,
+        targetPaceSecondsPerMile: workout.targetPaceSecondsPerMile,
         completed: workout.completed,
         clubSuggestionReason: workout.clubSuggestion?.matchReason ?? null,
         hasRoute: !!workout.generatedRoute,

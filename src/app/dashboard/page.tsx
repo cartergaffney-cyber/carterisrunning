@@ -21,6 +21,8 @@ import {
 } from "@/lib/stats/aggregate";
 import { computePerformancePredictions } from "@/lib/fitness-assessment/performance-predictor";
 import { addDays, diffInDays, today } from "@/lib/utils/date";
+import { buildCalendarRange, sundayOfWeek } from "@/lib/calendar/build-calendar";
+import { TodayPanel } from "@/components/dashboard/TodayPanel";
 
 const STATS_WEEKS_BACK = 12;
 
@@ -65,23 +67,38 @@ export default async function DashboardPage() {
 
   const performancePredictions = await computePerformancePredictions(user.id);
 
+  // The merged view, so today's panel reflects every active race at once
+  // rather than whichever plan happens to be soonest.
+  const calendar = await buildCalendarRange(user.id, sundayOfWeek(today()), 1);
+  const todayCell = calendar.weeks[0]?.days.find((day) => day.isToday) ?? null;
+  const weekdayLabel = today().toLocaleDateString(undefined, {
+    weekday: "short", month: "short", day: "numeric", timeZone: "UTC",
+  });
+
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 p-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome, {name}</h1>
-        <form action="/api/auth/logout" method="POST">
-          <button
-            type="submit"
-            className="rounded-full border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-surface-muted"
-          >
-            Log out
-          </button>
-        </form>
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-8 py-7">
+      <div className="flex flex-wrap items-baseline justify-between gap-4">
+        <h1 className="text-[clamp(26px,4vw,34px)]">Welcome, {name}</h1>
+        <div className="flex items-center gap-5">
+          <span className="metric text-[13px] tracking-[0.08em] text-faint-foreground">
+            {weekdayLabel.toUpperCase()}
+          </span>
+          <form action="/api/auth/logout" method="POST">
+            <button
+              type="submit"
+              className="brand-label rounded-full border border-border-strong px-5 py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+            >
+              Log out
+            </button>
+          </form>
+        </div>
       </div>
 
       {activeCoachNote && (
         <CoachNoteBanner id={activeCoachNote.id} message={activeCoachNote.message} helpful={activeCoachNote.helpful} />
       )}
+
+      {todayCell && <TodayPanel day={todayCell} />}
 
       <div className="flex flex-wrap items-center gap-3">
         <StravaSyncButton />
@@ -132,18 +149,22 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatTile
-          label="This week's mileage"
-          value={`${thisWeek.actualMiles.toFixed(1)} mi`}
-          subtitle={activePlan ? `of ${thisWeek.targetMiles.toFixed(1)} mi planned` : undefined}
+          label="This week"
+          value={thisWeek.actualMiles.toFixed(1)}
+          unit={activePlan ? ` / ${thisWeek.targetMiles.toFixed(1)} mi` : " mi"}
+          progress={activePlan && thisWeek.targetMiles > 0 ? thisWeek.actualMiles / thisWeek.targetMiles : undefined}
+          subtitle={activePlan ? undefined : "no race scheduled"}
         />
         <StatTile
-          label="Adherence"
-          value={overallAdherencePct !== null ? `${Math.round(overallAdherencePct)}%` : "—"}
+          label="Plan adherence"
+          value={overallAdherencePct !== null ? String(Math.round(overallAdherencePct)) : "—"}
+          unit={overallAdherencePct !== null ? "%" : undefined}
           subtitle={activePlan ? `last ${STATS_WEEKS_BACK} weeks` : "no race scheduled"}
         />
         <StatTile
           label="Days to race"
           value={daysToRace !== null ? String(daysToRace) : "—"}
+          tone="accent"
           subtitle={activePlan?.raceDate.toLocaleDateString(undefined, { dateStyle: "medium", timeZone: "UTC" })}
         />
       </div>
@@ -152,17 +173,17 @@ export default async function DashboardPage() {
 
       <div className="flex flex-col gap-4">
         <Card className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">Weekly mileage</h2>
+          <h2 className="text-[20px] leading-none">Weekly mileage</h2>
           <WeeklyMileageChart data={weeklyMileageSeries} />
         </Card>
 
         <Card className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">Pace trend</h2>
+          <h2 className="text-[20px] leading-none">Pace trend</h2>
           <PaceTrendChart data={paceTrendSeries} />
         </Card>
 
         <Card className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">Plan adherence</h2>
+          <h2 className="text-[20px] leading-none">Plan adherence</h2>
           <AdherenceChart data={adherenceSeries} />
         </Card>
       </div>
