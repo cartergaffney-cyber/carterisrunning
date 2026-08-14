@@ -18,7 +18,7 @@ export default async function RunsPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Runs</h1>
+        <h1 className="text-[clamp(26px,4vw,32px)]">Runs</h1>
         <StravaSyncButton />
       </div>
       <RunLogTable runs={runs} />

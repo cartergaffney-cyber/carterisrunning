@@ -110,7 +110,7 @@ export default async function DashboardPage() {
                 <span className="text-xs font-medium text-muted-foreground">
                   {activePlanCount > 1 ? "Next race" : "Your race"}
                 </span>
-                <span className="text-lg font-semibold">
+                <span className="text-[20px]">
                   {activePlan.race?.name ?? DISTANCE_LABELS[activePlan.raceDistance as RaceDistance]}
                 </span>
                 <span className="text-sm text-muted-foreground">

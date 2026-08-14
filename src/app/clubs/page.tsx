@@ -25,7 +25,7 @@ export default async function ClubsPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Run Clubs</h1>
+        <h1 className="text-[clamp(26px,4vw,32px)]">Run Clubs</h1>
         <div className="flex items-start gap-2">
           <RefreshClubEventsButton />
           <DiscoverClubsButton />

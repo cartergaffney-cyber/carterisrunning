@@ -25,7 +25,7 @@ export default async function MessagesPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Messages</h1>
+        <h1 className="text-[clamp(26px,4vw,32px)]">Messages</h1>
         <p className="text-sm text-muted-foreground">
           A running record of updates and plan changes from your coach.
         </p>

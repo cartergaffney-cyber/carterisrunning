@@ -32,7 +32,7 @@ export default async function RacesIndexPage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Races</h1>
+        <h1 className="text-[clamp(26px,4vw,32px)]">Races</h1>
         <Link
           href="/races/new"
           className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"

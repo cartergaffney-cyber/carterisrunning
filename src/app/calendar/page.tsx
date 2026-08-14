@@ -44,7 +44,7 @@ export default async function CalendarPage({
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Calendar</h1>
+          <h1 className="text-[clamp(26px,4vw,32px)]">Calendar</h1>
           <p className="text-sm text-muted-foreground">
             Every race you&rsquo;re training for, merged into one schedule.
           </p>
